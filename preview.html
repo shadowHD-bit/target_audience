@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Итоговая модель ЦА Crypto API</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --panel:#111936;
+      --panel2:#151f42;
+      --text:#eef3ff;
+      --muted:#9fb0d0;
+      --line:#28345d;
+      --green:#19c37d;
+      --blue:#4ba3ff;
+      --cyan:#38d6df;
+      --orange:#ffb454;
+      --red:#ff6b6b;
+      --purple:#b78cff;
+      --gray:#6c7897;
+      --chip:#202b55;
+      --shadow: 0 18px 50px rgba(0,0,0,.35);
+      --radius:22px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top left, #1b2b62 0, transparent 34%), radial-gradient(circle at 80% 0, #143b42 0, transparent 28%), var(--bg);
+      color:var(--text);
+      line-height:1.45;
+    }
+    a{color:#9ed0ff}
+    .wrap{max-width:1480px;margin:0 auto;padding:28px}
+    .hero{
+      border:1px solid rgba(255,255,255,.08);
+      background:linear-gradient(135deg, rgba(30,47,104,.94), rgba(13,20,46,.92));
+      border-radius:28px;
+      padding:32px;
+      box-shadow:var(--shadow);
+      position:relative;
+      overflow:hidden;
+    }
+    .hero:after{
+      content:"";position:absolute;right:-120px;top:-160px;width:420px;height:420px;border-radius:50%;
+      background:radial-gradient(circle, rgba(75,163,255,.35), transparent 65%);
+      pointer-events:none;
+    }
+    h1{font-size:42px;line-height:1.05;margin:0 0 12px;letter-spacing:-.04em;max-width:980px}
+    .subtitle{color:var(--muted);font-size:17px;max-width:1050px;margin:0}
+    .chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+    .chip{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.09);border-radius:999px;padding:8px 12px;color:#dbe7ff;font-size:13px}
+    .grid{display:grid;gap:18px;margin-top:18px}
+    .metrics{grid-template-columns:repeat(4,1fr)}
+    .metric{
+      background:rgba(17,25,54,.82);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:var(--radius);
+      padding:18px;
+      min-height:116px;
+    }
+    .metric .num{font-size:34px;font-weight:800;letter-spacing:-.03em;margin-bottom:6px}
+    .metric .lbl{color:var(--muted);font-size:13px}
+    .two{grid-template-columns:1.18fr .82fr}
+    .panel{
+      background:rgba(17,25,54,.9);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:var(--radius);
+      padding:18px;
+      box-shadow:0 12px 35px rgba(0,0,0,.18);
+      min-width:0;
+    }
+    .panel h2{font-size:19px;margin:0 0 4px;letter-spacing:-.02em}
+    .panel .note{color:var(--muted);font-size:13px;margin:0 0 12px}
+    .chart{height:440px;width:100%}
+    .chart.small{height:370px}
+    .controls{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0 0}
+    select,input{
+      background:#0f1733;color:var(--text);border:1px solid var(--line);border-radius:12px;padding:11px 12px;outline:none;
+      min-width:220px;
+    }
+    .segment-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:18px}
+    .card{
+      border:1px solid rgba(255,255,255,.08);
+      background:linear-gradient(180deg, rgba(25,37,79,.95), rgba(15,22,48,.95));
+      border-radius:20px;padding:18px;min-height:280px;position:relative;overflow:hidden;
+    }
+    .card.hide{display:none}
+    .card .tag{display:inline-flex;align-items:center;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:700;margin-bottom:12px;background:var(--chip);color:#dfe8ff}
+    .card h3{font-size:18px;margin:0 0 8px;line-height:1.2}
+    .card p{color:var(--muted);font-size:13px;margin:7px 0}
+    .row{display:grid;grid-template-columns:110px 1fr;gap:8px;margin-top:10px;font-size:13px}
+    .row b{color:#dce8ff}.row span{color:var(--muted)}
+    .priority-1{border-top:4px solid var(--green)}
+    .priority-2{border-top:4px solid var(--blue)}
+    .priority-3{border-top:4px solid var(--cyan)}
+    .priority-strategic{border-top:4px solid var(--orange)}
+    .priority-mid{border-top:4px solid var(--purple)}
+    .priority-module{border-top:4px solid var(--red)}
+    .priority-niche{border-top:4px solid var(--gray)}
+    table{width:100%;border-collapse:collapse;font-size:13px;border-radius:16px;overflow:hidden}
+    th,td{padding:11px 10px;border-bottom:1px solid rgba(255,255,255,.07);vertical-align:top}
+    th{background:#18224a;color:#e7efff;text-align:left;position:sticky;top:0;z-index:1}
+    td{color:#c6d4f2;background:rgba(15,22,48,.6)}
+    tr:hover td{background:rgba(31,45,94,.75)}
+    .table-wrap{max-height:560px;overflow:auto;border:1px solid rgba(255,255,255,.08);border-radius:18px;margin-top:12px}
+    .method-table td:first-child{font-weight:800;color:#fff}
+    .score{display:inline-block;border-radius:999px;padding:4px 8px;font-size:12px;font-weight:700}
+    .score.high{background:rgba(25,195,125,.16);color:#71f0b7}.score.mid{background:rgba(255,180,84,.16);color:#ffd193}.score.low{background:rgba(255,107,107,.16);color:#ffa6a6}
+    .legend{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0 0;font-size:12px;color:var(--muted)}
+    .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+    .footer{color:var(--muted);font-size:12px;margin:28px 0 4px;text-align:center}
+    .warn{display:none;background:rgba(255,180,84,.12);border:1px solid rgba(255,180,84,.4);padding:12px;border-radius:14px;margin:12px 0;color:#ffdca8;font-size:13px}
+    @media (max-width:1100px){.metrics,.two,.segment-grid{grid-template-columns:1fr}.chart{height:380px}h1{font-size:34px}.wrap{padding:16px}.hero{padding:24px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>Итоговая модель целевой аудитории Crypto API</h1>
+      <p class="subtitle">Визуальный дашборд по результатам трех методов: гипотезная сегментация, открытые источники и кейсы конкурентов. Цель — быстро увидеть, какие B2B-сегменты наиболее перспективны, где сильнее подтверждение рынком и какие сценарии внедрения стоит тестировать первыми.</p>
+      <div class="chips">
+        <span class="chip">Фокус: B2B</span><span class="chip">Продукт: Crypto API / CaaS / Wallet / Payments</span><span class="chip">Главный ICP: платежи и выплаты</span><span class="chip">AML — обязательный слой</span>
+      </div>
+    </section>
+
+    <section class="grid metrics">
+      <div class="metric"><div class="num">3</div><div class="lbl">метода сопоставления: гипотезы, источники, кейсы конкурентов</div></div>
+      <div class="metric"><div class="num">9</div><div class="lbl">итоговых групп сегментов в модели ЦА</div></div>
+      <div class="metric"><div class="num">82</div><div class="lbl">публичных кейса конкурентов с конкретными заказчиками</div></div>
+      <div class="metric"><div class="num">ICP-1</div><div class="lbl">платежи, PSP, stablecoin settlement и массовые выплаты</div></div>
+    </section>
+
+    <section class="controls">
+      <select id="priorityFilter">
+        <option value="all">Все приоритеты</option>
+        <option value="ICP-1">ICP-1 / ICP-1B</option>
+        <option value="ICP-2">ICP-2</option>
+        <option value="ICP-3">ICP-3</option>
+        <option value="ICP-4">ICP-4</option>
+        <option value="Strategic">Strategic ICP</option>
+        <option value="Средний">Средний приоритет</option>
+        <option value="Модульный">Модульный слой</option>
+        <option value="Нишевый">Нишевый</option>
+      </select>
+      <input id="searchBox" placeholder="Поиск по сегментам, функциям, кейсам..." />
+    </section>
+
+    <section class="grid two">
+      <div class="panel">
+        <h2>Карта приоритетов: соответствие рынку × сложность продажи</h2>
+        <p class="note">Размер пузыря отражает силу подтверждения кейсами конкурентов. Чем выше — сильнее соответствие рынку; чем правее — сложнее продажа и внедрение.</p>
+        <div id="bubble" class="chart"></div>
+        <div class="warn" id="plotlyWarn">Графики не загрузились, потому что библиотека Plotly недоступна. Таблицы и карточки ниже работают без нее.</div>
+      </div>
+      <div class="panel">
+        <h2>Публичные кейсы конкурентов по сегментам</h2>
+        <p class="note">Оценочное распределение по 82 публичным кейсам с named customer.</p>
+        <div id="bar" class="chart small"></div>
+      </div>
+    </section>
+
+    <section class="grid two">
+      <div class="panel">
+        <h2>География спроса и кейсов</h2>
+        <p class="note">Интенсивность отражает совокупный сигнал: публичные кейсы, рыночные источники и релевантность региона. Global-кейсы распределены по штаб-квартирам и основным рынкам.</p>
+        <div id="map" class="chart"></div>
+      </div>
+      <div class="panel">
+        <h2>Что подтверждают три метода</h2>
+        <p class="note">Итоговая модель строится на пересечении логики продукта, открытых источников и кейсов конкурентов.</p>
+        <div class="table-wrap" style="max-height:440px">
+          <table class="method-table">
+            <thead><tr><th>Сегмент</th><th>Гипотезы</th><th>Источники</th><th>Кейсы</th><th>Итог</th></tr></thead>
+            <tbody id="methodRows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" style="margin-top:18px">
+      <h2>Карточки итоговых сегментов</h2>
+      <p class="note">Фильтруются по приоритету и поиску. В карточках указаны сценарии, география, функции Crypto API и примеры компаний из кейсов конкурентов.</p>
+      <div id="cards" class="segment-grid"></div>
+    </section>
+
+    <section class="panel" style="margin-top:18px">
+      <h2>Примеры кейсов конкурентов</h2>
+      <p class="note">Сжатая витрина named customer cases, которые помогают понять, кто реально покупает похожие Crypto API / CaaS / payments / wallet / compliance решения.</p>
+      <div class="controls" style="margin-top:8px"><input id="caseSearch" placeholder="Поиск по клиенту, провайдеру, сегменту..." /></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Провайдер</th><th>Клиент</th><th>Сегмент</th><th>География</th><th>Сценарий внедрения</th><th>Что это показывает</th></tr></thead>
+          <tbody id="caseRows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="footer">Дашборд подготовлен как визуальный слой к desk research. Численные оценки — рабочая аналитическая модель, а не финансовый прогноз.</div>
+  </div>
+
+<script>
+const segments = [
+  {id:'payments', name:'Платежи / PSP / stablecoin settlement', priority:'ICP-1', fit:94, complexity:45, evidence:24, potential:'Высокий', cls:'priority-1', color:'#19c37d', geos:'США, Европа, UK, Сингапур, Гонконг, LATAM, глобально', functions:'Wallet, Transactions, Notifications, Webhooks, Rates, AML, Healthcheck, Vault, Audit', cases:'Worldpay, Triple-A, Banxa, Orbital, Bridge, Coinflow, Noda, Titan FX', scenario:'Встроить stablecoin payments, merchant settlement, cross-border transfers, on/off-ramp или crypto payment acceptance.', summary:'Главный ICP: покупает не “крипту”, а платежную инфраструктуру, скорость расчетов, статусы, сверку и контроль рисков.'},
+  {id:'payouts', name:'Payroll / EOR / contractor и marketplace payouts', priority:'ICP-1B', fit:92, complexity:48, evidence:9, potential:'Средний / высокий', cls:'priority-1', color:'#2bd88f', geos:'Глобально, 60–100+ стран, США, Европа, LATAM, Азия', functions:'Payouts, Wallet, Rates, Notifications, AML, Reports, Transaction History, Webhooks', cases:'Deel, Gusto, Remote, goLance, Admitad, Félix Pago', scenario:'Массовые выплаты подрядчикам, фрилансерам, продавцам маркетплейса, авторам или партнерам.', summary:'Отдельный сильный сценарий внутри платежей: регулярные выплаты, много стран, высокая измеримая ценность.'},
+  {id:'fintech', name:'Финтехи / необанки / digital finance apps', priority:'ICP-2', fit:86, complexity:40, evidence:12, potential:'Средний / высокий', cls:'priority-2', color:'#4ba3ff', geos:'США, Европа, LATAM, emerging markets, глобальные продукты', functions:'Wallet, Auth, Keys, Exchange, Portfolio, Rates, AML, Notifications, On/off-ramp', cases:'MoneyLion, Webull Pay, Public, Utoppia, Xapo Bank, Bitwala', scenario:'Добавить кошельки, покупку/продажу crypto, stablecoin balances, переводы, портфель или on/off-ramp.', summary:'Естественный покупатель embedded crypto: уже есть финансовый продукт и потребность быстрее запустить новые функции.'},
+  {id:'trading', name:'Брокеры / биржи / trading-платформы', priority:'ICP-3', fit:80, complexity:63, evidence:17, potential:'Средний / высокий', cls:'priority-3', color:'#38d6df', geos:'США, Европа, LATAM, Австралия, глобально', functions:'Wallet, Exchange, Rates, Portfolio, AML, Notifications, Audit, Healthcheck', cases:'Webull Pay, Public, tastytrade, Kalshi, Deriv, Blueberry, Bit2Me, Bitso', scenario:'Встроить crypto trading, stablecoin deposits, account funding, swap, custody-like operations или staking.', summary:'Функционально сильный сегмент, но требования к надежности, скорости, ликвидности и SLA выше.'},
+  {id:'wallet', name:'Wallet / portfolio / blockchain data products', priority:'ICP-4', fit:78, complexity:42, evidence:14, potential:'Низкий / средний / высокий', cls:'priority-3', color:'#64e1e8', geos:'Глобально, рынки с активной crypto-аудиторией', functions:'Balances, Transaction History, Portfolio, Rates, Notifications, Webhooks, Dictionary, Healthcheck', cases:'CoinStats, NGRAVE, AuthenTrend, CoinCurve, Ledger, Bitcoin.com, Cake Wallet, D’Cent', scenario:'Получать балансы, историю транзакций, данные по активам, события, portfolio view и поддержку сетей.', summary:'Хороший сегмент для wallet/data/portfolio-модулей, но не всегда покупает полный Crypto API.'},
+  {id:'banks', name:'Банки / regulated institutions / institutional digital assets', priority:'Strategic', fit:72, complexity:90, evidence:12, potential:'Высокий / enterprise', cls:'priority-strategic', color:'#ffb454', geos:'Европа, Швейцария, Сингапур, США, LATAM, regulated markets', functions:'Vault, Keys, AML, Audit, Healthcheck, Wallet, Self-hosted, Full Source, Reports', cases:'ABN AMRO, Banking Circle, Banca Sella, Sygnum, Bancolombia/Wenia, 3iQ', scenario:'Digital asset custody, tokenized assets, stablecoin operations, internal treasury, digital bonds, compliance infrastructure.', summary:'Высокий чек и стратегическая ценность, но длинная продажа, RFP, аудит и жесткие требования безопасности.'},
+  {id:'b2bsaas', name:'B2B / SaaS embedded crypto platforms', priority:'Средний', fit:64, complexity:70, evidence:5, potential:'Средний / высокий', cls:'priority-mid', color:'#b78cff', geos:'Глобально, США, Европа, Азия', functions:'API platform, Wallet, AML, Exchange, Auth, Notifications, Partner settings, Self-hosted', cases:'Coinbase CDP, Striga, Circle Wallets, embedded wallet providers', scenario:'Встроить кошельки, платежи, выплаты, AML или обмен как модуль для клиентов платформы.', summary:'Перспективно для white-label/embedded crypto, но сложнее из-за субклиентов, кастомизации и партнерских настроек.'},
+  {id:'aml', name:'AML / compliance-heavy VASP, exchanges и финтехи', priority:'Модульный', fit:58, complexity:50, evidence:4, potential:'Средний', cls:'priority-module', color:'#ff6b6b', geos:'Европа, США, Сингапур, глобальные regulated markets', functions:'AML, Transaction Screening, Address Checks, Audit, History, Notifications, Reports, Travel Rule integrations', cases:'BitMEX, Flipster, Easy Crypto, Banca Sella', scenario:'Проверка адресов, транзакций, Travel Rule, расследования, история решений, санкционные проверки.', summary:'Не главный standalone ICP, но обязательный слой для платежек, финтехов, бирж и банков.'},
+  {id:'web3', name:'Web3 / gaming / NFT / loyalty', priority:'Нишевый', fit:50, complexity:45, evidence:6, potential:'Низкий / средний', cls:'priority-niche', color:'#6c7897', geos:'Глобально, Web3-экосистемы', functions:'Embedded wallet, Auth, gasfree, staking, loyalty, notifications', cases:'Blocklords, Cetus, Renzo, Mojito/Sotheby’s', scenario:'Встроить кошелек, авторизацию, gas abstraction, staking, токены, награды или NFT payments.', summary:'Смежный сегмент: есть кейсы, но как основной ICP слабее платежей, финтеха и выплат.'},
+  {id:'niche', name:'Travel / donations / merchants / nonprofits', priority:'Нишевый', fit:42, complexity:30, evidence:5, potential:'Низкий / средний', cls:'priority-niche', color:'#8b95ad', geos:'Глобально, travel/e-commerce/nonprofit вертикали', functions:'Checkout, invoice, donation flow, settlement, conversion, reports, notifications', cases:'Solartrip, Fundraise Up, Cardstorm, BCRAFT', scenario:'Принимать crypto/stablecoin payments, donation flow, checkout, settlement и reporting.', summary:'Хорошие модульные use cases, но чаще нужен узкий платежный модуль, а не полный Crypto API.'}
+];
+
+const method = [
+  ['Платежи / PSP', 'очень сильная', 'очень сильные', 'очень много', 'ICP-1'],
+  ['Payroll / payouts', 'сильная', 'сильные', 'много', 'ICP-1B'],
+  ['Финтехи / необанки', 'сильная', 'сильные', 'много', 'ICP-2'],
+  ['Брокеры / trading', 'сильная', 'средние / сильные', 'много', 'ICP-3'],
+  ['Wallet / data', 'сильная по модулям', 'сильные', 'много', 'ICP-4'],
+  ['Банки / institutional', 'стратегическая', 'сильные', 'много', 'Strategic ICP'],
+  ['B2B / SaaS embedded', 'средняя / сильная', 'средние', 'частично', 'Средний приоритет'],
+  ['AML / compliance', 'точечная', 'очень сильные', 'есть', 'Модульный слой'],
+  ['Web3 / gaming / NFT', 'средняя', 'ограниченные', 'есть', 'Нишевый'],
+  ['Travel / donations', 'точечная', 'ограниченные', 'есть', 'Модульный / нишевый']
+];
+
+const cases = [
+  ['Fireblocks','Worldpay','PSP / stablecoin settlement','US/UK/global','Stablecoin settlement для merchant settlements','Платежные гиганты покупают расчетный слой и T+0 settlement'],
+  ['Fireblocks','Triple-A','Crypto payment provider','US/EU/Singapore/global','Масштабирование crypto payments','Нужны адреса, сети, gas, подтверждения, compliance'],
+  ['Fireblocks','Banxa','On/off-ramp / payment infrastructure','200 стран','Мультичейн on/off-ramp операции','Платежным провайдерам нужна надежная мультичейн-инфраструктура'],
+  ['Fireblocks','Orbital','Cross-border payments','UK/Estonia/Gibraltar/global','Stablecoin-powered cross-border flows','Stablecoin payments требуют custody/security and automation'],
+  ['Fireblocks','Bridge','Stablecoin infrastructure','US/global','Массовые stablecoin payments и token issuance','Backend для bulk payments и B2B stablecoin operations'],
+  ['BVNK','Deel','EOR / global payroll','100+ стран','Stablecoin payouts for contractors','Payroll/EOR — сильный сценарий массовых выплат'],
+  ['BVNK','Coinflow','Merchant settlement','US/global','Instant stablecoin settlements','Merchant settlement может идти через USDC across chains'],
+  ['BVNK','Utoppia','Fintech for remote workers','US + emerging markets','Digital dollars settle in seconds','Региональные финтехи покупают доступ к dollar/stablecoin rails'],
+  ['BVNK','Xapo Bank','Digital bank','Gibraltar/global','Stablecoin deposits','Банки используют stablecoin deposits и auto-conversion'],
+  ['ZeroHash','Gusto','Payroll / HR','70+ стран','Instant global stablecoin payouts','HR/payroll-платформы хотят глобальные выплаты'],
+  ['ZeroHash','Remote','Payroll / contractor payouts','60+ стран','Stablecoin payouts','Клиенты HR-платформ запрашивают stablecoins'],
+  ['ZeroHash','Félix Pago','Remittance','US-LATAM','Compliant cross-border settlement rail','Remittance болит из-за FX costs, delays, prefunding'],
+  ['ZeroHash','MoneyLion','Consumer fintech','US','Embedded crypto trading/custody','Финтехи встраивают crypto в существующий app'],
+  ['ZeroHash','Public','Brokerage / investing','US','24/7 crypto trading','Брокеры добавляют digital assets без полной инфраструктуры'],
+  ['Coinbase CDP','Webull Pay','Brokerage / financial app','US/global','Crypto-as-a-Service integration','Крупный финансовый продукт встраивает crypto через CaaS'],
+  ['Coinbase CDP','3iQ','Asset manager / ETF','Canada','ETH staking ETF infrastructure','Institutional сегмент требует custody/staking'],
+  ['Crypto APIs','CoinStats','Portfolio platform','Global','Hardware wallet data access','Portfolio-продуктам нужны данные, балансы и история'],
+  ['Crypto APIs','NGRAVE','Hardware wallet','Belgium/global','Reliable blockchain gateway','Wallet/hardware wallet ищут надежный gateway'],
+  ['Crypto APIs','CoinSwitch Kuber','Crypto exchange','India','Blockchain products integration','Биржам нужны blockchain APIs для масштабирования'],
+  ['Striga','Bitwala','Bitcoin neobank','Germany/EU','Custody, trading, issuing APIs','Необанк покупает compliant crypto-banking infrastructure'],
+  ['Striga','Bitrefill','Crypto-only commerce','Sweden/global','Global crypto cards','Коммерческие crypto-сервисы покупают card/crypto-banking layer'],
+  ['ChangeNOW','Cake Wallet','Non-custodial wallet','Global','Exchange API inside wallet','Wallet-продукты встраивают обмен без выхода из интерфейса'],
+  ['NOWPayments','Admitad','Affiliate marketing platform','Global','Crypto payouts to partners','Affiliate/partner networks — отдельный payout-сценарий'],
+  ['NOWPayments','Solartrip','Travel booking','Global','Crypto payments for travel bookings','Travel — нишевый payment use case'],
+  ['QuickNode','Bitcoin.com','Wallet / crypto services','Global','Streams for webhook/data routing','Wallet-продуктам нужны события, receipts и data pipelines'],
+  ['Alchemy','Slash','Stablecoin banking app','Global','Smart wallets for stablecoin banking','Stablecoin banking требует embedded/smart wallets'],
+  ['Chainalysis','BitMEX','Crypto derivatives exchange','Global','Compliance and investigations','Биржам нужны KYT, monitoring, withdrawals blocking'],
+  ['Chainalysis','Banca Sella','Bank','Italy','Crypto compliance strategy','Банки покупают risk mitigation и regulatory control']
+];
+
+const geo = [
+  ['USA','США',30], ['GBR','Великобритания',14], ['NLD','Нидерланды',9], ['DEU','Германия',9], ['FRA','Франция',7], ['ESP','Испания',7], ['ITA','Италия',6], ['CHE','Швейцария',8], ['SGP','Сингапур',10], ['HKG','Гонконг',7], ['GIB','Гибралтар',5], ['CAN','Канада',7], ['AUS','Австралия',6], ['NZL','Новая Зеландия',4], ['COL','Колумбия',5], ['BRA','Бразилия',5], ['MEX','Мексика',5], ['ARG','Аргентина',4], ['IND','Индия',8], ['TUR','Турция',5], ['NOR','Норвегия',4], ['SWE','Швеция',4], ['BEL','Бельгия',3], ['TWN','Тайвань',3], ['KOR','Южная Корея',3], ['ZAF','ЮАР',3], ['EST','Эстония',3], ['LTU','Литва',3]
+];
+
+function scoreClass(v){ return v.includes('очень') || v==='много' ? 'high' : (v.includes('сред') || v==='есть' || v==='частично' ? 'mid' : 'low'); }
+function renderMethod(){
+  document.getElementById('methodRows').innerHTML = method.map(r => `<tr><td>${r[0]}</td><td><span class="score ${scoreClass(r[1])}">${r[1]}</span></td><td><span class="score ${scoreClass(r[2])}">${r[2]}</span></td><td><span class="score ${scoreClass(r[3])}">${r[3]}</span></td><td><b>${r[4]}</b></td></tr>`).join('');
+}
+function renderCards(){
+  const f = document.getElementById('priorityFilter').value;
+  const q = document.getElementById('searchBox').value.trim().toLowerCase();
+  const html = segments.map(s=>{
+    const text = Object.values(s).join(' ').toLowerCase();
+    const show = (f==='all' || s.priority.includes(f) || (f==='ICP-1' && (s.priority==='ICP-1'||s.priority==='ICP-1B'))) && (!q || text.includes(q));
+    return `<article class="card ${s.cls} ${show?'':'hide'}">
+      <span class="tag">${s.priority} · ${s.potential}</span>
+      <h3>${s.name}</h3>
+      <p>${s.summary}</p>
+      <div class="row"><b>Сценарий</b><span>${s.scenario}</span></div>
+      <div class="row"><b>География</b><span>${s.geos}</span></div>
+      <div class="row"><b>Функции</b><span>${s.functions}</span></div>
+      <div class="row"><b>Кейсы</b><span>${s.cases}</span></div>
+    </article>`;
+  }).join('');
+  document.getElementById('cards').innerHTML = html;
+}
+function renderCases(){
+  const q = document.getElementById('caseSearch').value.trim().toLowerCase();
+  document.getElementById('caseRows').innerHTML = cases.filter(r=>!q || r.join(' ').toLowerCase().includes(q)).map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('');
+}
+function plot(){
+  if(!window.Plotly){ document.getElementById('plotlyWarn').style.display='block'; return; }
+  const layoutBase = {paper_bgcolor:'rgba(0,0,0,0)',plot_bgcolor:'rgba(0,0,0,0)',font:{color:'#dbe7ff'},margin:{l:56,r:18,t:14,b:54},showlegend:false};
+  Plotly.newPlot('bubble', [{
+    x: segments.map(s=>s.complexity), y: segments.map(s=>s.fit), text: segments.map(s=>s.name),
+    mode:'markers+text', textposition:'top center', hovertemplate:'<b>%{text}</b><br>Fit: %{y}<br>Сложность: %{x}<br>Кейсы/сигнал: %{marker.size}<extra></extra>',
+    marker:{size:segments.map(s=>Math.max(16, s.evidence*3.2)), color:segments.map(s=>s.color), opacity:.85, line:{color:'rgba(255,255,255,.8)', width:1}}
+  }], {...layoutBase, xaxis:{title:'Сложность продажи и внедрения',range:[20,98],gridcolor:'rgba(255,255,255,.08)'}, yaxis:{title:'Соответствие продукту и рынку',range:[35,100],gridcolor:'rgba(255,255,255,.08)'}, shapes:[{type:'rect',xref:'paper',yref:'paper',x0:0,y0:.58,x1:.55,y1:1,fillcolor:'rgba(25,195,125,.06)',line:{width:0}},{type:'rect',xref:'paper',yref:'paper',x0:.55,y0:.58,x1:1,y1:1,fillcolor:'rgba(255,180,84,.06)',line:{width:0}}]}, {displayModeBar:false, responsive:true});
+
+  const sorted = [...segments].sort((a,b)=>b.evidence-a.evidence);
+  Plotly.newPlot('bar', [{type:'bar', orientation:'h', y:sorted.map(s=>s.name).reverse(), x:sorted.map(s=>s.evidence).reverse(), marker:{color:sorted.map(s=>s.color).reverse()}, hovertemplate:'%{y}<br>Сила кейсов/сигнала: %{x}<extra></extra>'}], {...layoutBase, margin:{l:190,r:18,t:10,b:38}, xaxis:{title:'Сила подтверждения кейсами',gridcolor:'rgba(255,255,255,.08)'}, yaxis:{automargin:true}}, {displayModeBar:false, responsive:true});
+
+  Plotly.newPlot('map', [{type:'choropleth', locations:geo.map(g=>g[0]), z:geo.map(g=>g[2]), text:geo.map(g=>g[1]), colorscale:[[0,'#17234b'],[.35,'#2369a5'],[.7,'#19c37d'],[1,'#ffb454']], marker:{line:{color:'rgba(255,255,255,.35)',width:.4}}, colorbar:{title:'Сигнал',tickfont:{color:'#dbe7ff'},titlefont:{color:'#dbe7ff'}}, hovertemplate:'<b>%{text}</b><br>Сила сигнала: %{z}<extra></extra>'}], {...layoutBase, margin:{l:0,r:0,t:0,b:0}, geo:{projection:{type:'natural earth'}, bgcolor:'rgba(0,0,0,0)',showframe:false,showcoastlines:false,showland:true,landcolor:'#17234b',countrycolor:'rgba(255,255,255,.2)'}}, {displayModeBar:false, responsive:true});
+}
+
+document.getElementById('priorityFilter').addEventListener('change', renderCards);
+document.getElementById('searchBox').addEventListener('input', renderCards);
+document.getElementById('caseSearch').addEventListener('input', renderCases);
+renderMethod(); renderCards(); renderCases();
+setTimeout(plot, 80);
+window.addEventListener('resize', () => { if(window.Plotly){ ['bubble','bar','map'].forEach(id=>Plotly.Plots.resize(id)); } });
+</script>
+</body>
+</html>
