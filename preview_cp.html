@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Дэшборд анализа ЦА - Криптопроцессинг</title>
+  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --surface: #ffffff;
+      --surface-soft: #f7f8fa;
+      --border: #e8ebef;
+      --text: #111827;
+      --muted: #667085;
+      --muted-2: #98a2b3;
+      --accent: #1f6feb;
+      --accent-soft: #eef5ff;
+      --green: #12b76a;
+      --amber: #f79009;
+      --red: #f04438;
+      --purple: #7a5af8;
+      --shadow: 0 8px 28px rgba(16, 24, 40, 0.06);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.5;
+    }
+
+    .page {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 28px 28px 60px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 24px;
+      padding: 28px;
+      border: 1px solid var(--border);
+      border-radius: 26px;
+      box-shadow: var(--shadow);
+      background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+      margin-bottom: 22px;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+
+    h1 {
+      font-size: 34px;
+      line-height: 1.1;
+      margin-bottom: 12px;
+      letter-spacing: -0.04em;
+    }
+
+    h2 {
+      font-size: 22px;
+      margin-bottom: 10px;
+      letter-spacing: -0.02em;
+    }
+
+    h3 {
+      font-size: 16px;
+      margin-bottom: 8px;
+      letter-spacing: -0.01em;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      max-width: 900px;
+      margin-bottom: 0;
+      font-size: 15px;
+    }
+
+    .tagline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 10px;
+      background: var(--surface-soft);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 12px;
+      color: #344054;
+      white-space: nowrap;
+    }
+
+    .pill.accent { background: var(--accent-soft); color: #1d4ed8; border-color: #d8e8ff; }
+    .pill.green { background: #ecfdf3; color: #027a48; border-color: #d1fadf; }
+    .pill.amber { background: #fffaeb; color: #b54708; border-color: #fedf89; }
+
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+      max-width: 480px;
+    }
+
+    .nav a {
+      color: #344054;
+      text-decoration: none;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 12px;
+      background: #fff;
+    }
+
+    .section {
+      margin-top: 24px;
+      padding: 24px;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      background: #fff;
+      box-shadow: var(--shadow);
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .section-header p {
+      color: var(--muted);
+      margin-bottom: 0;
+      max-width: 860px;
+      font-size: 14px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    .metric-card {
+      padding: 18px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+
+    .metric-title {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .metric-value {
+      font-size: 32px;
+      font-weight: 750;
+      letter-spacing: -0.04em;
+      margin-bottom: 6px;
+    }
+
+    .metric-caption {
+      font-size: 12px;
+      color: var(--muted);
+      margin: 0;
+    }
+
+    .chart-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      overflow: hidden;
+      min-height: 380px;
+    }
+
+    .chart-title {
+      padding: 16px 18px 0;
+      margin-bottom: 0;
+      font-size: 15px;
+    }
+
+    .chart-desc {
+      padding: 4px 18px 0;
+      color: var(--muted);
+      font-size: 12px;
+      margin: 0;
+    }
+
+    .plot {
+      width: 100%;
+      height: 350px;
+    }
+
+    .plot.tall { height: 470px; }
+    .plot.short { height: 300px; }
+
+    .note {
+      border: 1px solid #d8e8ff;
+      background: var(--accent-soft);
+      color: #184a90;
+      border-radius: 18px;
+      padding: 16px 18px;
+      font-size: 14px;
+    }
+
+    .segment-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      background: #fff;
+    }
+
+    .segment-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .segment-name {
+      font-size: 17px;
+      font-weight: 750;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+
+    .segment-meta {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 12px;
+    }
+
+    .badge {
+      padding: 6px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 650;
+      white-space: nowrap;
+    }
+
+    .badge.primary { background: #ecfdf3; color: #027a48; }
+    .badge.medium { background: #eff4ff; color: #3538cd; }
+    .badge.check { background: #fffaeb; color: #b54708; }
+    .badge.api { background: #fef3f2; color: #b42318; }
+
+    .kv {
+      display: grid;
+      grid-template-columns: 112px 1fr;
+      gap: 8px 12px;
+      font-size: 12px;
+      margin-top: 10px;
+    }
+
+    .kv .k { color: var(--muted); }
+    .kv .v { color: #344054; }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      font-size: 13px;
+    }
+
+    th, td {
+      text-align: left;
+      vertical-align: top;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background: var(--surface-soft);
+      font-size: 12px;
+      color: #344054;
+      font-weight: 700;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    td { color: #344054; }
+
+    .footer {
+      margin-top: 24px;
+      color: var(--muted-2);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    @media (max-width: 980px) {
+      .topbar { flex-direction: column; }
+      .nav { justify-content: flex-start; max-width: none; }
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+      .plot, .plot.tall { height: 360px; }
+      .section-header { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div>
+        <h1>Анализ ЦА криптопроцессинга</h1>
+        <p class="subtitle"></p>
+        <div class="tagline">
+          <span class="pill accent">Фокус - ядро приема, учета и вывода средств</span>
+          <span class="pill">B2B</span>
+          <span class="pill">White-label</span>
+          <span class="pill">Self-hosted</span>
+          <span class="pill green">4 основных сегмента</span>
+          <span class="pill amber">Ниши для проверки</span>
+        </div>
+      </div>
+      <nav class="nav">
+        <a href="#summary">Обзор</a>
+        <a href="#segments">Сегменты</a>
+        <a href="#product-boundaries">Границы</a>
+        <a href="#sources">Источники</a>
+        <a href="#pains">Боли</a>
+        <a href="#formats">Форматы</a>
+        <a href="#geo">География</a>
+        <a href="#rare">Ниши</a>
+      </nav>
+    </header>
+
+    <section class="section" id="summary">
+      <div class="section-header">
+        <div>
+          <h2>Краткий результат</h2>
+          <p>Спрос разделен на ядро процессинга, платежный шлюз, выплаты, проверки и данные</p>
+        </div>
+      </div>
+
+      <div class="grid grid-4">
+        <div class="metric-card">
+          <div class="metric-title">Основной коммерческий фокус</div>
+          <div class="metric-value">4</div>
+          <p class="metric-caption">платежные шлюзы, выплаты, платформы, брокеры</p>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">Кейсы конкурентов</div>
+          <div class="metric-value">80+</div>
+          <p class="metric-caption">платежи, выплаты, продавцы, брокеры, iGaming</p>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">Открытые источники</div>
+          <div class="metric-value">73</div>
+          <p class="metric-caption">сигналы рынка, документы, отчеты, регуляторика</p>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">B2B-боли</div>
+          <div class="metric-value">72</div>
+          <p class="metric-caption">операционка, статусы, учет, выплаты, безопасность</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2" style="margin-top:16px">
+        <div class="chart-card">
+          <h3 class="chart-title">Распределение найденного спроса</h3>
+          <p class="chart-desc">Часть спроса относится к ядру, часть - к надстройкам и другим продуктам</p>
+          <div id="demandSplit" class="plot short"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Приоритет сегментов</h3>
+          <p class="chart-desc">Оценка связи с ядром процессинга и коммерческой привлекательности</p>
+          <div id="priorityBubble" class="plot short"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="segments">
+      <div class="section-header">
+        <div>
+          <h2>Итоговая модель сегментов</h2>
+          <p>Сегменты сгруппированы по роли криптопроцессинга в бизнесе клиента</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2" style="margin-bottom:16px">
+        <div class="chart-card">
+          <h3 class="chart-title">Сила сегментов по типу</h3>
+          <p class="chart-desc">Иерархия основных, смежных, стратегических и нишевых сегментов</p>
+          <div id="segmentTypeStrength" class="plot"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Роль процессинга в сегменте</h3>
+          <p class="chart-desc">Какую задачу закрывает продукт для разных клиентов</p>
+          <div id="processingRoleBars" class="plot"></div>
+        </div>
+      </div>
+
+      <div class="grid grid-3">
+        <div class="segment-card">
+          <div class="segment-top"><div><div class="segment-name">Платежные сервисы и шлюзы</div><div class="segment-meta">Ядро приема и расчетов</div></div><span class="badge primary">ICP-1</span></div>
+          <p>Провайдеры, которым нужно добавить криптоплатежи и стейблкоин-расчеты в свой платежный контур</p>
+          <div class="kv"><div class="k">Сценарий</div><div class="v">прием, учет, расчеты</div><div class="k">Функции</div><div class="v">субаккаунты, адреса, сбор средств, статусы, выводы</div><div class="k">Роли</div><div class="v">платежи, продукт, CTO, риск</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div><div class="segment-name">Выплаты и переводы</div><div class="segment-meta">Исходящий контур</div></div><span class="badge primary">ICP-2</span></div>
+          <p>Платформы выплат, зарплатные сервисы и переводы, где важны массовые операции и отчетность</p>
+          <div class="kv"><div class="k">Сценарий</div><div class="v">выплаты подрядчикам, партнерам, получателям</div><div class="k">Функции</div><div class="v">сервисные кошельки, выводы, лимиты, отчеты</div><div class="k">Роли</div><div class="v">платежи, операции, финансы</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div><div class="segment-name">Маркетплейсы и платформы</div><div class="segment-meta">Учет по получателям</div></div><span class="badge primary">ICP-3</span></div>
+          <p>Платформы, которым нужно разделять средства между продавцами, партнерами, авторами или субаккаунтами</p>
+          <div class="kv"><div class="k">Сценарий</div><div class="v">прием и распределение средств</div><div class="k">Функции</div><div class="v">субаккаунты, балансы, внутренние переводы</div><div class="k">Роли</div><div class="v">платежи, платформа, финансы</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div><div class="segment-name">Брокеры и торговые платформы</div><div class="segment-meta">Депозиты и выводы</div></div><span class="badge primary">ICP-4</span></div>
+          <p>Торговые продукты, которым нужны USDT-пополнения, выводы, сверка, статусы и устойчивость операций</p>
+          <div class="kv"><div class="k">Сценарий</div><div class="v">пополнение торгового счета</div><div class="k">Функции</div><div class="v">адреса, уведомления, выводы, история</div><div class="k">Роли</div><div class="v">платежи, риск, операции</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div><div class="segment-name">Криптоплатформы</div><div class="segment-meta">Депозитно-выводной слой</div></div><span class="badge medium">Средний</span></div>
+          <p>Криптосервисы и Web3-платформы с пополнениями, выводами, сервисными кошельками и историей</p>
+          <div class="kv"><div class="k">Сценарий</div><div class="v">депозиты и выводы</div><div class="k">Функции</div><div class="v">адреса, сбор средств, ключи, мониторинг</div><div class="k">Роли</div><div class="v">CTO, продукт, безопасность</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div><div class="segment-name">Регулируемые финтехи</div><div class="segment-meta">Стратегический сегмент</div></div><span class="badge medium">Strategic</span></div>
+          <p>Банки и финтехи, которым нужен контролируемый слой с аудитом, отчетами и размещением у клиента</p>
+          <div class="kv"><div class="k">Сценарий</div><div class="v">контролируемые стейблкоин-операции</div><div class="k">Функции</div><div class="v">размещение, аудит, роли, отчеты</div><div class="k">Роли</div><div class="v">CISO, комплаенс, закупки</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="product-boundaries">
+      <div class="section-header">
+        <div>
+          <h2>Границы продукта</h2>
+          <p>Что остается в криптопроцессинге, а что уходит в платежный шлюз, Crypto API или другие продукты</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Матрица ядро vs готовый продукт</h3>
+          <p class="chart-desc">Сценарии разделены между ядром, шлюзом и смежными продуктами</p>
+          <div id="coreGatewayMatrix" class="plot"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Распределение по продуктовым контурам</h3>
+          <p class="chart-desc">Условное распределение найденных сигналов</p>
+          <div id="productContours" class="plot"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="sources">
+      <div class="section-header">
+        <div>
+          <h2>Сигналы открытых источников</h2>
+          <p>Источники подтверждают рост стейблкоин-платежей, выплат и требований к операционному контуру</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Источники по группе сигнала</h3>
+          <p class="chart-desc">Структура 73 источников из блока рыночных сигналов</p>
+          <div id="sourceSignals" class="plot tall"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Источники по типу</h3>
+          <p class="chart-desc">Документация и страницы провайдеров особенно полезны для требований к продукту</p>
+          <div id="sourceTypes" class="plot tall"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="pains">
+      <div class="section-header">
+        <div>
+          <h2>Карта B2B-болей</h2>
+          <p>Ключевые барьеры покупки, внедрения и эксплуатации</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Боли по сегментам</h3>
+          <p class="chart-desc">Оценка выраженности болей по основным сегментам</p>
+          <div id="painHeatmap" class="plot tall"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Причины сложности покупки</h3>
+          <p class="chart-desc">Операционные проблемы оказались самой частой группой болей</p>
+          <div id="painReasons" class="plot tall"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="formats">
+      <div class="section-header">
+        <div>
+          <h2>Форматы решения</h2>
+          <p>Разные сегменты требуют разной глубины поставки и обвязки вокруг ядра</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Связь сегментов и форматов решения</h3>
+          <p class="chart-desc">Какой формат поставки подходит каждому сегменту</p>
+          <div id="formatSankey" class="plot tall"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Запросы функционала</h3>
+          <p class="chart-desc">Какие функции сильнее проявились в анализе</p>
+          <div id="featureBars" class="plot tall"></div>
+        </div>
+      </div>
+
+      <table style="margin-top:16px">
+        <thead><tr><th>Формат решения</th><th>Для кого</th><th>Суть</th></tr></thead>
+        <tbody>
+          <tr><td>Ядро процессинга</td><td>Платежные провайдеры</td><td>Адреса, кошельки, субаккаунты, сбор средств, выводы и история</td></tr>
+          <tr><td>Модуль выплат</td><td>Зарплатные сервисы и переводы</td><td>Исходящие операции, массовые выплаты, лимиты, отчеты и статусы</td></tr>
+          <tr><td>Платформенный учет</td><td>Маркетплейсы и платформы</td><td>Субаккаунты, балансы, внутренние переводы и сверка</td></tr>
+          <tr><td>USDT-пополнения</td><td>Брокеры и торговые платформы</td><td>Временные адреса, TRON / USDT, уведомления, сбор средств</td></tr>
+          <tr><td>Платежный шлюз поверх ядра</td><td>Крупные продавцы</td><td>Платежная форма, счета, возвраты и расчеты</td></tr>
+          <tr><td>Размещение у клиента</td><td>Банки и регулируемые финтехи</td><td>Контроль инфраструктуры, исходники, аудит и безопасность</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section" id="geo">
+      <div class="section-header">
+        <div>
+          <h2>География спроса</h2>
+          <p>Карта показывает только направление открытых сигналов</p>
+        </div>
+      </div>
+
+      <div class="note" style="margin-bottom:14px">
+        Важно - карта не отражает реальные объемы спроса. Она построена по открытым кейсам и источникам, которые не покрывают весь рынок
+      </div>
+
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Региональная релевантность</h3>
+          <p class="chart-desc">Качественная оценка регионов по числу релевантных сигналов</p>
+          <div id="geoMap" class="plot tall"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Сценарии по регионам</h3>
+          <p class="chart-desc">Какие сегменты сильнее проявляются в разных географиях</p>
+          <div id="geoBars" class="plot tall"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="rare">
+      <div class="section-header">
+        <div>
+          <h2>Нишевые и будущие направления</h2>
+          <p>Направления для пилотов, отдельных предложений и дорожной карты</p>
+        </div>
+      </div>
+
+      <div class="note" style="margin-bottom:14px">
+        Коэффициенты на графиках подобраны для визуализации и не являются точными рыночными метриками
+      </div>
+
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Ниши по зрелости и связи с процессингом</h3>
+          <p class="chart-desc">Чем выше точка - тем сильнее связь с процессингом, чем правее - тем понятнее спрос</p>
+          <div id="nicheQuadrant" class="plot"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Редкие сценарии применения</h3>
+          <p class="chart-desc">Нестандартные направления, которые не стоит ставить в первый фокус</p>
+          <div id="rareTreemap" class="plot"></div>
+        </div>
+      </div>
+
+      <table style="margin-top:16px">
+        <thead><tr><th>Ниша</th><th>Как трактовать</th><th>Действие</th></tr></thead>
+        <tbody>
+          <tr><td>USDT-пополнения для брокеров</td><td>Очень близко к ядру: адреса, уведомления, сбор средств</td><td>Отдельное предложение</td></tr>
+          <tr><td>Автоматический сбор USDT</td><td>Подходит для клиентов с большим числом адресов</td><td>Упаковать как точечный модуль</td></tr>
+          <tr><td>Партнерские выплаты</td><td>Сильный сценарий внутри выплат</td><td>Добавить пакетные выплаты и отчеты</td></tr>
+          <tr><td>Локальные USDT-кассы</td><td>Есть нижний спрос, но нужен легкий кассовый продукт</td><td>Не смешивать с ядром</td></tr>
+          <tr><td>Платежи ИИ-агентов</td><td>Ранний сигнал, ближе к программируемым платежам</td><td>Отслеживать для будущего API</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+<script>
+const config = {responsive: true, displayModeBar: false};
+const font = {family: 'Inter, Arial, sans-serif', color: '#111827'};
+const layoutBase = {
+  paper_bgcolor: 'white',
+  plot_bgcolor: 'white',
+  font,
+  margin: {l: 42, r: 24, t: 22, b: 48},
+  xaxis: {gridcolor: '#eef1f5', zerolinecolor: '#eef1f5'},
+  yaxis: {gridcolor: '#eef1f5', zerolinecolor: '#eef1f5'}
+};
+
+Plotly.newPlot('demandSplit', [{
+  type: 'pie',
+  hole: 0.62,
+  labels: ['Ядро процессинга', 'Платежный шлюз', 'Выплаты', 'Проверки / данные / кошелек'],
+  values: [42, 22, 20, 16],
+  textinfo: 'label+percent',
+  hovertemplate: '%{label}<br>%{value}%<extra></extra>',
+  marker: {colors: ['#1f6feb', '#12b76a', '#f79009', '#98a2b3'], line: {color: 'white', width: 3}}
+}], {...layoutBase, margin: {l: 10, r: 10, t: 18, b: 18}, showlegend: false}, config);
+
+Plotly.newPlot('priorityBubble', [{
+  type: 'scatter', mode: 'markers+text',
+  x: [94, 88, 84, 80, 68, 62, 56, 48, 32, 24],
+  y: [96, 90, 86, 82, 74, 66, 64, 58, 42, 34],
+  text: ['Платежные<br>шлюзы', 'Выплаты<br>и переводы', 'Платформы<br>и маркетплейсы', 'Брокеры', 'Крипто<br>платформы', 'Крупные<br>продавцы', 'iGaming', 'Банки /<br>финтехи', 'Малые<br>кассы', 'API-only'],
+  textposition: 'top center',
+  marker: {size: [36,34,32,30,26,24,24,22,18,18], color: ['#1f6feb','#1f6feb','#12b76a','#12b76a','#7a5af8','#f79009','#f79009','#7a5af8','#98a2b3','#98a2b3'], opacity: 0.86, line: {color: 'white', width: 2}},
+  hovertemplate: 'Коммерческий потенциал: %{x}<br>Связь с процессингом: %{y}<extra></extra>'
+}], {...layoutBase,
+  xaxis: {title: 'Коммерческий потенциал', range: [0, 100], gridcolor: '#eef1f5'},
+  yaxis: {title: 'Связь с ядром процессинга', range: [0, 100], gridcolor: '#eef1f5'},
+  shapes: [
+    {type:'line', x0:50, x1:50, y0:0, y1:100, line:{color:'#e8ebef', dash:'dot'}},
+    {type:'line', x0:0, x1:100, y0:50, y1:50, line:{color:'#e8ebef', dash:'dot'}}
+  ]
+}, config);
+
+Plotly.newPlot('segmentTypeStrength', [{
+  type:'treemap',
+  labels:['Все сегменты','Основной фокус','Платежные сервисы','Выплаты и переводы','Маркетплейсы и платформы','Брокеры','Средний и смежный фокус','Криптоплатформы','Крупные продавцы','iGaming','Стратегический фокус','Банки и финтехи','Нишевые','Партнерские сети','B2B-счета','USDT-кассы'],
+  parents:['','Все сегменты','Основной фокус','Основной фокус','Основной фокус','Основной фокус','Все сегменты','Средний и смежный фокус','Средний и смежный фокус','Средний и смежный фокус','Все сегменты','Стратегический фокус','Все сегменты','Нишевые','Нишевые','Нишевые'],
+  values:[0,0,30,27,24,22,0,18,14,14,0,18,0,10,8,6],
+  marker:{colors:['#ffffff','#eef5ff','#1f6feb','#1f6feb','#12b76a','#12b76a','#f4f3ff','#7a5af8','#f79009','#f79009','#f4f3ff','#7a5af8','#fffaeb','#f79009','#f79009','#98a2b3']},
+  textinfo:'label+value',
+  hovertemplate:'%{label}<br>Условная сила: %{value}<extra></extra>'
+}], {...layoutBase, margin:{l:10,r:10,t:10,b:10}}, config);
+
+Plotly.newPlot('processingRoleBars', [{
+  type:'bar', orientation:'h',
+  y:['Прием и расчеты','Исходящие выплаты','Учет по субаккаунтам','Депозиты и выводы','Платежный шлюз поверх ядра','Регулируемый контур'],
+  x:[96,90,86,82,66,62],
+  marker:{color:['#1f6feb','#1f6feb','#12b76a','#12b76a','#f79009','#7a5af8']},
+  hovertemplate:'%{y}: %{x}<extra></extra>'
+}], {...layoutBase, margin:{l:190,r:24,t:20,b:36}, xaxis:{title:'Условная релевантность', range:[0,100], gridcolor:'#eef1f5'}, yaxis:{autorange:'reversed'}}, config);
+
+Plotly.newPlot('coreGatewayMatrix', [{
+  type: 'scatter', mode: 'markers+text',
+  x: [90, 84, 78, 74, 65, 55, 42, 34, 26, 18, 12],
+  y: [92, 86, 82, 76, 68, 58, 46, 38, 28, 18, 12],
+  text: ['PSP<br>ядро', 'Выплаты', 'Платформы', 'Брокеры', 'Крипто<br>депозиты', 'iGaming', 'Крупный<br>merchant', 'Checkout', 'AML-only', 'Data API', 'Кошелек'],
+  textposition: 'middle center',
+  marker: {size: [42,40,38,36,32,30,28,26,24,24,24], color: ['#1f6feb','#1f6feb','#12b76a','#12b76a','#7a5af8','#f79009','#f79009','#98a2b3','#98a2b3','#98a2b3','#98a2b3'], opacity: 0.18, line: {color: ['#1f6feb','#1f6feb','#12b76a','#12b76a','#7a5af8','#f79009','#f79009','#98a2b3','#98a2b3','#98a2b3','#98a2b3'], width: 2}}
+}], {...layoutBase,
+  xaxis: {title: 'Нужны аккаунты, адреса, сбор средств и выводы', range: [0, 100], gridcolor: '#eef1f5'},
+  yaxis: {title: 'Нужен операционный учет средств', range: [0, 100], gridcolor: '#eef1f5'},
+  shapes: [
+    {type:'rect', x0:55, x1:100, y0:55, y1:100, fillcolor:'#eef5ff', opacity:0.45, line:{width:0}},
+    {type:'rect', x0:0, x1:55, y0:0, y1:55, fillcolor:'#f7f8fa', opacity:0.7, line:{width:0}}
+  ],
+  annotations: [
+    {x:78, y:98, text:'Криптопроцессинг', showarrow:false, font:{color:'#1f6feb', size:12}},
+    {x:25, y:8, text:'Шлюз / AML / данные / кошелек', showarrow:false, font:{color:'#667085', size:12}}
+  ]
+}, config);
+
+Plotly.newPlot('productContours', [{
+  type:'bar', orientation:'h',
+  y:['Ядро процессинга','Платежный шлюз','Модуль выплат','Платформенный учет','Проверки рисков','Данные / API','Кошелек'],
+  x:[32,20,18,14,7,5,4],
+  marker:{color:['#1f6feb','#12b76a','#f79009','#7a5af8','#98a2b3','#98a2b3','#98a2b3']},
+  hovertemplate:'%{y}: %{x}%<extra></extra>'
+}], {...layoutBase, margin:{l:165,r:24,t:20,b:36}, xaxis:{title:'Доля сигналов, %', gridcolor:'#eef1f5'}, yaxis:{autorange:'reversed'}}, config);
+
+Plotly.newPlot('sourceSignals', [{
+  type:'bar', orientation:'h',
+  y:['Продуктовые требования','Риски и регулирование','Стейблкоин-платежи','Продавцы и платежный слой','Международные платежи','Низкоуровневые решения','География и принятие','Размер рынка','Требования покупателей','Сделки и сигналы','Оркестрация','Вертикали','Платформенный учет'],
+  x:[13,10,8,7,6,6,6,4,4,3,2,2,1],
+  marker:{color:['#1f6feb','#7a5af8','#12b76a','#12b76a','#f79009','#f79009','#98a2b3','#98a2b3','#98a2b3','#1f6feb','#12b76a','#f79009','#7a5af8']},
+  hovertemplate:'%{y}: %{x}<extra></extra>'
+}], {...layoutBase, margin:{l:220,r:24,t:20,b:36}, xaxis:{title:'Количество источников', gridcolor:'#eef1f5'}, yaxis:{autorange:'reversed'}}, config);
+
+Plotly.newPlot('sourceTypes', [{
+  type:'pie', hole:0.58,
+  labels:['Документация','Страницы провайдеров','Данные и отчеты','Отраслевые материалы','Руководства и сравнения','Регуляторные материалы','Оценки рынка','Анонсы и сделки'],
+  values:[13,13,12,9,8,7,4,7],
+  textinfo:'label+percent',
+  marker:{colors:['#1f6feb','#12b76a','#7a5af8','#f79009','#f79009','#98a2b3','#98a2b3','#1f6feb'], line:{color:'white', width:3}},
+  hovertemplate:'%{label}: %{value}<extra></extra>'
+}], {...layoutBase, margin:{l:10,r:10,t:18,b:18}, showlegend:false}, config);
+
+const segments = ['Платежные шлюзы','Выплаты','Платформы','Брокеры','iGaming','Банки / финтехи'];
+const pains = ['Статусы','Сверка','Субаккаунты','Выводы','Безопасность','Регулирование','Возвраты','Поддержка'];
+const painZ = [
+  [10,9,8,8,8,9,7,8],
+  [8,9,7,10,8,9,7,8],
+  [9,10,10,8,8,8,8,7],
+  [10,10,6,9,8,9,6,9],
+  [10,8,6,10,9,10,7,10],
+  [8,9,8,8,10,10,7,8]
+];
+Plotly.newPlot('painHeatmap', [{
+  type:'heatmap', x:pains, y:segments, z:painZ,
+  colorscale:[[0,'#f7f8fa'],[0.5,'#d8e8ff'],[1,'#1f6feb']],
+  showscale:true, colorbar:{title:'Сила'},
+  hovertemplate:'%{y}<br>%{x}: %{z}/10<extra></extra>'
+}], {...layoutBase, margin:{l:150,r:20,t:20,b:110}, xaxis:{tickangle:-35}, yaxis:{autorange:'reversed'}}, config);
+
+Plotly.newPlot('painReasons', [{
+  type:'bar', orientation:'h',
+  y:['Операционка и поддержка','Интеграция и статусы','Границы продукта','Платформенный учет','Исходящие операции','Безопасность и ключи','Регулирование и риск','Прочее'],
+  x:[18,12,11,7,6,6,5,7],
+  text:[18,12,11,7,6,6,5,7],
+  textposition:'outside',
+  marker:{color:['#1f6feb','#1f6feb','#98a2b3','#12b76a','#f79009','#7a5af8','#7a5af8','#98a2b3']},
+  hovertemplate:'%{y}: %{x}<extra></extra>'
+}], {...layoutBase, margin:{l:220,r:30,t:20,b:36}, xaxis:{title:'Количество болей', range:[0,20], gridcolor:'#eef1f5'}, yaxis:{autorange:'reversed'}}, config);
+
+Plotly.newPlot('formatSankey', [{
+  type:'sankey', arrangement:'snap',
+  node:{pad:18, thickness:16, line:{color:'#e8ebef',width:1}, label:['Платежные шлюзы','Выплаты','Платформы','Брокеры','Крупные продавцы','Банки','iGaming','Ядро процессинга','Модуль выплат','Платформенный учет','USDT-пополнения','Платежный шлюз','Размещение у клиента','Риск-контур'], color:['#eef5ff','#eef5ff','#ecfdf3','#ecfdf3','#fffaeb','#f4f3ff','#fffaeb','#1f6feb','#f79009','#12b76a','#12b76a','#f79009','#7a5af8','#f04438']},
+  link:{source:[0,1,2,3,4,5,6], target:[7,8,9,10,11,12,13], value:[10,9,8,8,6,6,5], color:['rgba(31,111,235,.18)','rgba(247,144,9,.18)','rgba(18,183,106,.18)','rgba(18,183,106,.18)','rgba(247,144,9,.18)','rgba(122,90,248,.18)','rgba(240,68,56,.18)']}
+}], {...layoutBase, margin:{l:10,r:10,t:10,b:10}}, config);
+
+Plotly.newPlot('featureBars', [{
+  type:'bar',
+  x:['Временные адреса','Субаккаунты','Сбор средств','Выводы','Вебхуки','История','Отчеты','Лимиты','AML','Фиатные расчеты','Платежная форма'],
+  y:[10,9,9,9,10,9,8,7,8,6,6],
+  marker:{color:['#1f6feb','#12b76a','#1f6feb','#f79009','#1f6feb','#12b76a','#12b76a','#7a5af8','#7a5af8','#98a2b3','#98a2b3']},
+  hovertemplate:'%{x}: %{y}/10<extra></extra>'
+}], {...layoutBase, margin:{l:42,r:20,t:20,b:125}, yaxis:{title:'Значимость', range:[0,10]}, xaxis:{tickangle:-35}}, config);
+
+Plotly.newPlot('geoMap', [{
+  type:'choropleth',
+  locationmode:'ISO-3',
+  locations:['USA','GBR','DEU','FRA','NLD','CHE','SGP','HKG','ARE','IND','PHL','NGA','ZAF','BRA','ARG','COL','MEX','TUR','AUS','EST'],
+  z:[94,82,78,72,70,74,82,76,66,72,62,64,58,70,68,66,60,58,56,62],
+  text:['США','UK','Германия','Франция','Нидерланды','Швейцария','Сингапур','Гонконг','ОАЭ','Индия','Филиппины','Нигерия','ЮАР','Бразилия','Аргентина','Колумбия','Мексика','Турция','Австралия','Эстония'],
+  colorscale:[[0,'#f7f8fa'],[0.5,'#d8e8ff'],[1,'#1f6feb']],
+  marker:{line:{color:'#ffffff',width:0.6}},
+  colorbar:{title:'Релевантность'},
+  hovertemplate:'%{text}<br>Оценка: %{z}<extra></extra>'
+}], {...layoutBase, geo:{projection:{type:'natural earth'}, showframe:false, showcoastlines:false, bgcolor:'white'}, margin:{l:0,r:0,t:0,b:0}}, config);
+
+Plotly.newPlot('geoBars', [{
+  type:'bar', orientation:'h',
+  y:['США','Европа / UK','Сингапур / Гонконг / Азия','Латинская Америка','Африка и развивающиеся рынки','Глобальные цифровые сервисы'],
+  x:[94,84,80,72,66,78],
+  marker:{color:['#1f6feb','#1f6feb','#12b76a','#f79009','#f79009','#7a5af8']},
+  text:['Stripe, Bridge, Visa, финтех','MiCA, платежные провайдеры, банки','cross-border, PSP, брокеры','переводы, цифровой доллар','переводы, доступ к доллару','VPN, proxy, hosting, SaaS'],
+  hovertemplate:'%{y}<br>%{text}<extra></extra>'
+}], {...layoutBase, margin:{l:245,r:20,t:20,b:36}, xaxis:{range:[0,100], title:'Сила сигнала'}, yaxis:{autorange:'reversed'}}, config);
+
+Plotly.newPlot('nicheQuadrant', [{
+  type:'scatter', mode:'markers+text',
+  x:[78,74,68,64,58,54,48,42,34,28],
+  y:[88,84,78,72,66,60,56,48,40,34],
+  text:['USDT<br>top-up','Auto-sweep<br>USDT','Партнерские<br>выплаты','iGaming<br>касса','Proxy / VPN','Travel','B2B<br>счета','USDT POS','AI<br>платежи','IoT /<br>DePIN'],
+  textposition:'top center',
+  marker:{size:[32,30,28,26,24,22,21,20,18,18], color:['#1f6feb','#1f6feb','#f79009','#f79009','#12b76a','#12b76a','#98a2b3','#98a2b3','#7a5af8','#7a5af8'], opacity:.86, line:{color:'white',width:2}},
+  hovertemplate:'Спрос: %{x}<br>Связь с процессингом: %{y}<extra></extra>'
+}], {...layoutBase, xaxis:{title:'Понятность спроса', range:[0,100]}, yaxis:{title:'Связь с процессингом', range:[0,100]}, shapes:[{type:'line',x0:50,x1:50,y0:0,y1:100,line:{color:'#e8ebef',dash:'dot'}},{type:'line',x0:0,x1:100,y0:50,y1:50,line:{color:'#e8ebef',dash:'dot'}}]}, config);
+
+Plotly.newPlot('rareTreemap', [{
+  type:'treemap',
+  labels:['Редкие сценарии','USDT-пополнения','Автоматический сбор','Партнерские выплаты','Локальные кассы','B2B-счета','Пожертвования','Платежи ИИ','Устройства','Токенизированные активы','Углеродные кредиты'],
+  parents:['','Редкие сценарии','Редкие сценарии','Редкие сценарии','Редкие сценарии','Редкие сценарии','Редкие сценарии','Редкие сценарии','Редкие сценарии','Редкие сценарии','Редкие сценарии'],
+  values:[0,24,20,18,12,11,9,8,7,6,5],
+  marker:{colors:['#ffffff','#1f6feb','#1f6feb','#f79009','#98a2b3','#98a2b3','#12b76a','#7a5af8','#7a5af8','#7a5af8','#98a2b3']},
+  textinfo:'label+value',
+  hovertemplate:'%{label}<br>Вес проверки: %{value}<extra></extra>'
+}], {...layoutBase, margin:{l:10,r:10,t:10,b:10}}, config);
+</script>
+</body>
+</html>
