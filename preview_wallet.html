@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Дэшборд анализа ЦА - White-label криптокошелек</title>
+  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --surface: #ffffff;
+      --surface-soft: #f7f8fa;
+      --border: #e8ebef;
+      --text: #111827;
+      --muted: #667085;
+      --muted-2: #98a2b3;
+      --accent: #1f6feb;
+      --accent-soft: #eef5ff;
+      --green: #12b76a;
+      --amber: #f79009;
+      --red: #f04438;
+      --purple: #7a5af8;
+      --shadow: 0 8px 28px rgba(16, 24, 40, 0.06);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.5;
+    }
+
+    .page {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 28px 28px 60px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 24px;
+      padding: 28px;
+      border: 1px solid var(--border);
+      border-radius: 26px;
+      box-shadow: var(--shadow);
+      background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+      margin-bottom: 22px;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+
+    h1 {
+      font-size: 34px;
+      line-height: 1.1;
+      margin-bottom: 12px;
+      letter-spacing: -0.04em;
+    }
+
+    h2 {
+      font-size: 22px;
+      margin-bottom: 10px;
+      letter-spacing: -0.02em;
+    }
+
+    h3 {
+      font-size: 16px;
+      margin-bottom: 8px;
+      letter-spacing: -0.01em;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      max-width: 900px;
+      margin-bottom: 0;
+      font-size: 15px;
+    }
+
+    .tagline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 10px;
+      background: var(--surface-soft);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 12px;
+      color: #344054;
+      white-space: nowrap;
+    }
+
+    .pill.accent { background: var(--accent-soft); color: #1d4ed8; border-color: #d8e8ff; }
+    .pill.green { background: #ecfdf3; color: #027a48; border-color: #d1fadf; }
+    .pill.amber { background: #fffaeb; color: #b54708; border-color: #fedf89; }
+
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+      max-width: 460px;
+    }
+
+    .nav a {
+      color: #344054;
+      text-decoration: none;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 12px;
+      background: #fff;
+    }
+
+    .section {
+      margin-top: 24px;
+      padding: 24px;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      background: #fff;
+      box-shadow: var(--shadow);
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .section-header p {
+      color: var(--muted);
+      margin-bottom: 0;
+      max-width: 860px;
+      font-size: 14px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    .metric-card {
+      padding: 18px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+
+    .metric-title {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .metric-value {
+      font-size: 32px;
+      font-weight: 750;
+      letter-spacing: -0.04em;
+      margin-bottom: 6px;
+    }
+
+    .metric-caption {
+      font-size: 12px;
+      color: var(--muted);
+      margin: 0;
+    }
+
+    .chart-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      overflow: hidden;
+      min-height: 380px;
+    }
+
+    .chart-title {
+      padding: 16px 18px 0;
+      margin-bottom: 0;
+      font-size: 15px;
+    }
+
+    .chart-desc {
+      padding: 4px 18px 0;
+      color: var(--muted);
+      font-size: 12px;
+      margin: 0;
+    }
+
+    .plot {
+      width: 100%;
+      height: 350px;
+    }
+
+    .plot.tall { height: 470px; }
+    .plot.short { height: 300px; }
+
+    .note {
+      border: 1px solid #d8e8ff;
+      background: var(--accent-soft);
+      color: #184a90;
+      border-radius: 18px;
+      padding: 16px 18px;
+      font-size: 14px;
+    }
+
+    .segment-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      background: #fff;
+    }
+
+    .segment-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .segment-name {
+      font-size: 17px;
+      font-weight: 750;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+
+    .segment-meta {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 12px;
+    }
+
+    .badge {
+      padding: 6px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 650;
+      white-space: nowrap;
+    }
+
+    .badge.primary { background: #ecfdf3; color: #027a48; }
+    .badge.medium { background: #eff4ff; color: #3538cd; }
+    .badge.check { background: #fffaeb; color: #b54708; }
+    .badge.api { background: #fef3f2; color: #b42318; }
+
+    .kv {
+      display: grid;
+      grid-template-columns: 112px 1fr;
+      gap: 8px 12px;
+      font-size: 12px;
+      margin-top: 10px;
+    }
+
+    .kv .k { color: var(--muted); }
+    .kv .v { color: #344054; }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      font-size: 13px;
+    }
+
+    th, td {
+      text-align: left;
+      vertical-align: top;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background: var(--surface-soft);
+      font-size: 12px;
+      color: #344054;
+      font-weight: 700;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    td { color: #344054; }
+
+    .two-col-text {
+      columns: 2 320px;
+      column-gap: 24px;
+      color: #344054;
+      font-size: 14px;
+    }
+
+    .footer {
+      margin-top: 24px;
+      color: var(--muted-2);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    @media (max-width: 980px) {
+      .topbar { flex-direction: column; }
+      .nav { justify-content: flex-start; max-width: none; }
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+      .plot, .plot.tall { height: 360px; }
+      .section-header { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div>
+        <h1>Анализ ЦА криптокошелька</h1>
+        <p class="subtitle"></p>
+        <div class="tagline">
+          <span class="pill accent">Фокус - видимый пользовательский кошелек</span>
+          <span class="pill">B2B</span>
+          <span class="pill">White-label</span>
+          <span class="pill">Self-custody</span>
+          <span class="pill green">4 основных сегмента</span>
+          <span class="pill amber">Long-tail для проверки</span>
+        </div>
+      </div>
+      <nav class="nav">
+        <a href="#summary">Обзор</a>
+        <a href="#segments">Сегменты</a>
+        <a href="#wallet-api">Wallet vs API</a>
+        <a href="#pains">Боли</a>
+        <a href="#formats">Форматы</a>
+        <a href="#geo">География</a>
+        <a href="#rare">Редкие ниши</a>
+      </nav>
+    </header>
+
+    <section class="section" id="summary">
+      <div class="section-header">
+        <div>
+          <h2>1. Краткий результат</h2>
+          <p>Спрос разделен на кошелек, встроенный слой, MVP-форматы и инфраструктуру</p>
+        </div>
+      </div>
+
+      <div class="grid grid-4">
+        <div class="metric-card">
+          <div class="metric-title">Основной коммерческий фокус</div>
+          <div class="metric-value">3</div>
+          <p class="metric-caption">новые кошельки, финтехи, trading / биржи</p>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">Средний / смежный фокус</div>
+          <div class="metric-value">3</div>
+          <p class="metric-caption">Web3, token-проекты, бренды / loyalty</p>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">Проверяемый long-tail</div>
+          <div class="metric-value">3</div>
+          <p class="metric-caption">MVP, Telegram / web-wallet, merchant wallet</p>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">Перенести в Crypto API</div>
+          <div class="metric-value">5</div>
+          <p class="metric-caption">checkout, выплаты, данные, AML-only, custody</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2" style="margin-top:16px">
+        <div class="chart-card">
+          <h3 class="chart-title">Распределение найденного спроса</h3>
+          <p class="chart-desc">Часть сигналов подтверждает спрос на кошелек, часть - на будущий Crypto API или смежные продукты</p>
+          <div id="demandSplit" class="plot short"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Приоритет сегментов</h3>
+          <p class="chart-desc">Итоговая карта по силе связи с криптокошельком и коммерческой привлекательности</p>
+          <div id="priorityBubble" class="plot short"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="segments">
+      <div class="section-header">
+        <div>
+          <h2>2. Итоговая модель сегментов</h2>
+          <p>Сегменты сгруппированы по роли кошелька в продукте клиента</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2" style="margin-bottom:16px">
+        <div class="chart-card">
+          <h3 class="chart-title">Сила сегментов по типу</h3>
+          <p class="chart-desc">Иерархия основных, смежных и проверяемых сегментов</p>
+          <div id="segmentTypeStrength" class="plot"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Роль кошелька в сегменте</h3>
+          <p class="chart-desc">Какую функцию выполняет кошелек для клиента</p>
+          <div id="walletRoleBars" class="plot"></div>
+        </div>
+      </div>
+
+      <div class="grid grid-3">
+        <div class="segment-card">
+          <div class="segment-top"><div><div class="segment-name">Новые криптокошельки</div><div class="segment-meta">Полный white-label кошелек</div></div><span class="badge primary">ICP-1</span></div>
+          <p>Криптостартапы и wallet-команды, которым нужен готовый брендированный кошелек без разработки ядра с нуля</p>
+          <div class="kv"><div class="k">Сценарий</div><div class="v">Запуск собственного кошелька</div><div class="k">Функции</div><div class="v">iOS, Android, ядро, seed, токены, NFT, обмен, стейкинг</div><div class="k">Роли</div><div class="v">Founder, продукт, CTO</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div><div class="segment-name">Финтехи с криптокошельком</div><div class="segment-meta">Встроенный кошелек в финансовом приложении</div></div><span class="badge primary">ICP-2</span></div>
+          <p>Финансовые сервисы, где кошелек становится счетом пользователя для стейблкоинов, переводов и хранения активов</p>
+          <div class="kv"><div class="k">Сценарий</div><div class="v">Crypto-wallet внутри продукта</div><div class="k">Функции</div><div class="v">Стейблкоины, buy/sell, AML, отчеты, локализация</div><div class="k">Роли</div><div class="v">Продукт, CTO, комплаенс</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div><div class="segment-name">Trading apps / биржи</div><div class="segment-meta">Companion wallet</div></div><span class="badge primary">ICP-3</span></div>
+          <p>Торговые продукты, которым нужен кошелек рядом с биржей или внутри trading journey для вывода, портфеля и self-custody</p>
+          <div class="kv"><div class="k">Сценарий</div><div class="v">Кошелек рядом с торговлей</div><div class="k">Функции</div><div class="v">Подпись, обмен, вывод, портфель, risk-checks</div><div class="k">Роли</div><div class="v">Trading product, CTO, risk</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div><div class="segment-name">Web3 и token-проекты</div><div class="segment-meta">Ecosystem wallet</div></div><span class="badge medium">Средний</span></div>
+          <p>Кошелек как вход в экосистему: собственный токен, NFT, стейкинг, dApp, задания и рефералы</p>
+          <div class="kv"><div class="k">Сценарий</div><div class="v">Вход в экосистему</div><div class="k">Функции</div><div class="v">Token, NFT, dApp, WalletConnect, Gas Free</div><div class="k">Роли</div><div class="v">Founder, продукт, community</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div><div class="segment-name">Игры, бренды, loyalty</div><div class="segment-meta">Кошелек вовлечения</div></div><span class="badge medium">Модульный</span></div>
+          <p>Кошелек хранит награды, NFT, статусы, баллы и доступы, но часто не является полноценным финансовым продуктом</p>
+          <div class="kv"><div class="k">Сценарий</div><div class="v">Награды и удержание</div><div class="k">Функции</div><div class="v">NFT, задания, баллы, рефералы, social login</div><div class="k">Роли</div><div class="v">Marketing, growth, продукт</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div><div class="segment-name">MVP и малые заказчики</div><div class="segment-meta">Long-tail / проверка</div></div><span class="badge check">Проверка</span></div>
+          <p>Небольшие команды и комьюнити, которым нужен быстрый запуск web-wallet, Telegram-бота или кошелька с одной функцией</p>
+          <div class="kv"><div class="k">Сценарий</div><div class="v">Быстрый MVP</div><div class="k">Функции</div><div class="v">USDT/USDC, QR, рефералы, уведомления, базовая админка</div><div class="k">Роли</div><div class="v">Основатель, владелец проекта</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="wallet-api">
+      <div class="section-header">
+        <div>
+          <h2>3. Что остается в кошельке, а что уходит в Crypto API</h2>
+          <p>Часть сигналов относится не к кошельку, а к инфраструктуре</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Матрица Wallet vs API</h3>
+          <p class="chart-desc">Сценарии разделены между кошельком, API, процессингом и другими продуктами</p>
+          <div id="walletApiMatrix" class="plot"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Распределение по продуктовым контурам</h3>
+          <p class="chart-desc">Условное распределение найденных сигналов</p>
+          <div id="productContours" class="plot"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="pains">
+      <div class="section-header">
+        <div>
+          <h2>4. Карта B2B-болей</h2>
+          <p>Ключевые барьеры покупки и внедрения</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Боли по сегментам</h3>
+          <p class="chart-desc">Оценка выраженности болей по основным сегментам на основе анализа кейсов и источников</p>
+          <div id="painHeatmap" class="plot tall"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Причины сложности покупки</h3>
+          <p class="chart-desc">Условная оценка групп факторов</p>
+          <div id="painReasons" class="plot tall"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="formats">
+      <div class="section-header">
+        <div>
+          <h2>5. Продуктовые форматы</h2>
+          <p>Разные сегменты требуют разных форматов решения</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Связь сегментов и форматов решения</h3>
+          <p class="chart-desc">Какой формат решения подходит каждому сегменту</p>
+          <div id="formatSankey" class="plot tall"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Запросы функционала</h3>
+          <p class="chart-desc">Какие функции важнее для разных типов клиентов</p>
+          <div id="featureBars" class="plot tall"></div>
+        </div>
+      </div>
+
+      <table style="margin-top:16px">
+        <thead><tr><th>Формат решения</th><th>Для кого</th><th>Суть</th></tr></thead>
+        <tbody>
+          <tr><td>Полный white-label кошелек</td><td>Новые кошельки</td><td>Быстро запустить собственный iOS / Android кошелек под брендом</td></tr>
+          <tr><td>Встроенный кошелек</td><td>Финтехи и trading apps</td><td>Добавить crypto-wallet внутрь существующего приложения</td></tr>
+          <tr><td>Ecosystem wallet</td><td>Web3 и token-проекты</td><td>Создать вход в собственный токен, NFT, стейкинг и dApp</td></tr>
+          <tr><td>Light / MVP wallet</td><td>Малые заказчики</td><td>Проверить гипотезу с ограниченным набором функций</td></tr>
+          <tr><td>Telegram / web-wallet</td><td>Комьюнити</td><td>Запустить кошелек там, где уже находится аудитория</td></tr>
+          <tr><td>Loyalty / NFT wallet</td><td>Игры, бренды, loyalty</td><td>Хранить NFT, баллы, статусы, награды и доступы</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section" id="geo">
+      <div class="section-header">
+        <div>
+          <h2>6. География спроса</h2>
+          <p>Карта показывает только направление открытых сигналов</p>
+        </div>
+      </div>
+
+      <div class="note" style="margin-bottom:14px">
+        Важно - эта карта не отражает реальные объемы спроса. Она построена по открытым сигналам и кейсам, которые не покрывают весь рынок
+      </div>
+
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Региональная релевантность</h3>
+          <p class="chart-desc">Качественная оценка регионов по числу релевантных сигналов для кошелька</p>
+          <div id="geoMap" class="plot tall"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Сценарии по регионам</h3>
+          <p class="chart-desc">Какие сегменты сильнее проявляются в разных географиях</p>
+          <div id="geoBars" class="plot tall"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="rare">
+      <div class="section-header">
+        <div>
+          <h2>7. Проверяемые, нишевые и редкие сегменты</h2>
+          <p>Направления для пилотов и дальнейшей проверки</p>
+        </div>
+      </div>
+
+      <div class="note" style="margin-bottom:14px">
+        Коэффициенты на графиках подобраны для визуализации и не являются точными рыночными метриками
+      </div>
+
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Ниши по зрелости и связи с кошельком</h3>
+          <p class="chart-desc">Чем выше точка - тем сильнее связь с кошельком, чем правее - тем понятнее спрос</p>
+          <div id="nicheQuadrant" class="plot"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Редкие сценарии применения</h3>
+          <p class="chart-desc">Нестандартные направления, которые можно отслеживать, но не ставить в первый фокус</p>
+          <div id="rareTreemap" class="plot"></div>
+        </div>
+      </div>
+
+      <table style="margin-top:16px">
+        <thead><tr><th>Ниша</th><th>Как трактовать</th><th>Действие</th></tr></thead>
+        <tbody>
+          <tr><td>Малые MVP-заказчики</td><td>Есть спрос на быстрый запуск, но бюджет и требования нестабильны</td><td>облегченные форматы и строгая квалификация</td></tr>
+          <tr><td>Telegram / web-wallet</td><td>Кошелек там, где уже есть аудитория</td><td>Отдельный легкий формат</td></tr>
+          <tr><td>Merchant wallet с балансом</td><td>Релевантно только при постоянном кошельке, не простом checkout</td><td>Пилоты, не основной ICP</td></tr>
+          <tr><td>AI / machine wallets</td><td>Ранний инфраструктурный сигнал, ближе к серверным кошелькам</td><td>Следить для Crypto API</td></tr>
+          <tr><td>DePIN / устройства</td><td>Кошелек может быть привязан к устройству, но требует иной архитектуры</td><td>Отложить как R&D</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <div class="footer">Дэшборд собран по результатам анализа ЦА B2B некастодиального криптокошелька</div>
+  </main>
+
+<script>
+const config = {responsive: true, displayModeBar: false};
+const font = {family: 'Inter, Arial, sans-serif', color: '#111827'};
+const layoutBase = {
+  paper_bgcolor: 'white',
+  plot_bgcolor: 'white',
+  font,
+  margin: {l: 42, r: 24, t: 22, b: 48},
+  xaxis: {gridcolor: '#eef1f5', zerolinecolor: '#eef1f5'},
+  yaxis: {gridcolor: '#eef1f5', zerolinecolor: '#eef1f5'}
+};
+
+Plotly.newPlot('demandSplit', [{
+  type: 'pie',
+  hole: 0.62,
+  labels: ['Криптокошелек', 'Встроенный слой', 'MVP / web / Telegram', 'Crypto API / инфраструктура'],
+  values: [36, 22, 14, 28],
+  textinfo: 'label+percent',
+  hovertemplate: '%{label}<br>%{value}%<extra></extra>',
+  marker: {colors: ['#1f6feb', '#12b76a', '#f79009', '#98a2b3'], line: {color: 'white', width: 3}}
+}], {...layoutBase, margin: {l: 10, r: 10, t: 18, b: 18}, showlegend: false}, config);
+
+Plotly.newPlot('priorityBubble', [{
+  type: 'scatter', mode: 'markers+text',
+  x: [92, 82, 78, 68, 56, 48, 34, 24],
+  y: [94, 84, 80, 76, 62, 58, 46, 34],
+  text: ['Новые<br>кошельки', 'Финтехи', 'Trading<br>apps', 'Web3 / token', 'Игры /<br>loyalty', 'MVP', 'Merchant<br>wallet', 'API-only'],
+  textposition: 'top center',
+  marker: {size: [34, 30, 28, 25, 22, 20, 18, 18], color: ['#1f6feb','#12b76a','#12b76a','#7a5af8','#f79009','#f79009','#f79009','#98a2b3'], opacity: 0.86, line: {color: 'white', width: 2}},
+  hovertemplate: 'Коммерческий потенциал: %{x}<br>Связь с кошельком: %{y}<extra></extra>'
+}], {...layoutBase,
+  xaxis: {title: 'Коммерческий потенциал', range: [0, 100], gridcolor: '#eef1f5'},
+  yaxis: {title: 'Связь с кошельком', range: [0, 100], gridcolor: '#eef1f5'},
+  shapes: [
+    {type:'line', x0:50, x1:50, y0:0, y1:100, line:{color:'#e8ebef', dash:'dot'}},
+    {type:'line', x0:0, x1:100, y0:50, y1:50, line:{color:'#e8ebef', dash:'dot'}}
+  ]
+}, config);
+
+
+
+Plotly.newPlot('segmentTypeStrength', [{
+  type:'treemap',
+  labels:['Все сегменты','Основной фокус','Новые криптокошельки','Финтехи','Trading apps / биржи','Средний и смежный фокус','Web3 и token-проекты','Игры / бренды / loyalty','Потребительские криптосервисы','Проверяемые','MVP и малые заказчики','Telegram / web-wallet','Merchant wallet с балансом'],
+  parents:['','Все сегменты','Основной фокус','Основной фокус','Основной фокус','Все сегменты','Средний и смежный фокус','Средний и смежный фокус','Средний и смежный фокус','Все сегменты','Проверяемые','Проверяемые','Проверяемые'],
+  values:[0,0,28,24,21,0,18,13,10,0,12,9,7],
+  marker:{colors:['#ffffff','#eef5ff','#1f6feb','#12b76a','#12b76a','#f4f3ff','#7a5af8','#f79009','#98a2b3','#fffaeb','#f79009','#f79009','#98a2b3']},
+  textinfo:'label+value',
+  hovertemplate:'%{label}<br>Условная сила: %{value}<extra></extra>'
+}], {...layoutBase, margin:{l:10,r:10,t:10,b:10}}, config);
+
+Plotly.newPlot('walletRoleBars', [{
+  type:'bar', orientation:'h',
+  y:['Самостоятельный продукт','Встроенный слой','Companion wallet','Вход в экосистему','Модуль вовлечения','Легкий MVP'],
+  x:[95,84,78,72,58,52],
+  marker:{color:['#1f6feb','#12b76a','#12b76a','#7a5af8','#f79009','#f79009']},
+  hovertemplate:'%{y}: %{x}<extra></extra>'
+}], {...layoutBase, margin:{l:170,r:24,t:20,b:36}, xaxis:{title:'Условная релевантность', range:[0,100], gridcolor:'#eef1f5'}, yaxis:{autorange:'reversed'}}, config);
+
+Plotly.newPlot('walletApiMatrix', [{
+  type: 'scatter', mode: 'markers+text',
+  x: [88, 82, 78, 70, 62, 54, 32, 25, 18, 14],
+  y: [92, 80, 76, 70, 60, 52, 40, 34, 24, 18],
+  text: ['Новый<br>кошелек', 'Финтех<br>wallet', 'Companion<br>wallet', 'Token<br>wallet', 'Loyalty<br>wallet', 'MVP<br>wallet', 'Checkout', 'Payouts', 'Data API', 'AML-only'],
+  textposition: 'middle center',
+  marker: {size: [42,38,36,34,32,30,28,28,26,26], color: ['#1f6feb','#1f6feb','#12b76a','#7a5af8','#f79009','#f79009','#98a2b3','#98a2b3','#98a2b3','#98a2b3'], opacity: 0.18, line: {color: ['#1f6feb','#1f6feb','#12b76a','#7a5af8','#f79009','#f79009','#98a2b3','#98a2b3','#98a2b3','#98a2b3'], width: 2}}
+}], {...layoutBase,
+  xaxis: {title: 'Видимый пользовательский интерфейс', range: [0, 100], gridcolor: '#eef1f5'},
+  yaxis: {title: 'Постоянный баланс / история / активы', range: [0, 100], gridcolor: '#eef1f5'},
+  shapes: [
+    {type:'rect', x0:50, x1:100, y0:50, y1:100, fillcolor:'#eef5ff', opacity:0.45, line:{width:0}},
+    {type:'rect', x0:0, x1:50, y0:0, y1:50, fillcolor:'#f7f8fa', opacity:0.7, line:{width:0}}
+  ],
+  annotations: [
+    {x:76, y:98, text:'Кошелек', showarrow:false, font:{color:'#1f6feb', size:12}},
+    {x:26, y:8, text:'Crypto API / процессинг / другой продукт', showarrow:false, font:{color:'#667085', size:12}}
+  ]
+}, config);
+
+Plotly.newPlot('productContours', [{
+  type:'bar', orientation:'h',
+  y:['Полный кошелек','Встроенный кошелек','Ecosystem wallet','Loyalty / NFT','Light / MVP','Crypto API'],
+  x:[26,22,16,11,10,15],
+  marker:{color:['#1f6feb','#12b76a','#7a5af8','#f79009','#f79009','#98a2b3']},
+  hovertemplate:'%{y}: %{x}%<extra></extra>'
+}], {...layoutBase, margin:{l:150,r:24,t:20,b:36}, xaxis:{title:'Доля сигналов, %', gridcolor:'#eef1f5'}, yaxis:{autorange:'reversed'}}, config);
+
+const segments = ['Новые кошельки','Финтехи','Trading / биржи','Web3 / token','Игры / loyalty','MVP / малые'];
+const pains = ['Скорость запуска','Бренд / UX','Безопасность','AML / регулирование','Интеграция','Поддержка','Монетизация','Стоимость'];
+const painZ = [
+  [9,9,9,6,7,8,7,7],
+  [7,8,9,10,9,8,8,8],
+  [7,8,9,10,10,9,9,8],
+  [8,8,7,5,8,6,7,7],
+  [7,9,6,4,7,6,7,6],
+  [10,7,6,4,5,5,5,10]
+];
+Plotly.newPlot('painHeatmap', [{
+  type:'heatmap', x:pains, y:segments, z:painZ,
+  colorscale:[[0,'#f7f8fa'],[0.5,'#d8e8ff'],[1,'#1f6feb']],
+  showscale:true, colorbar:{title:'Сила'},
+  hovertemplate:'%{y}<br>%{x}: %{z}/10<extra></extra>'
+}], {...layoutBase, margin:{l:140,r:20,t:20,b:120}, xaxis:{tickangle:-35}, yaxis:{autorange:'reversed'}}, config);
+
+Plotly.newPlot('painReasons', [{
+  type:'bar', orientation:'h',
+  y:['Безопасность и ключи','Внедрение и кастомизация','Эксплуатация и поддержка','Регулирование и AML','Мобильная поставка','Монетизация','Стоимость и масштабирование'],
+  x:[92,88,82,76,69,61,58],
+  text:[92,88,82,76,69,61,58],
+  textposition:'outside',
+  marker:{color:['#1f6feb','#1f6feb','#12b76a','#7a5af8','#f79009','#98a2b3','#98a2b3']},
+  hovertemplate:'%{y}: %{x}<extra></extra>'
+}], {...layoutBase, margin:{l:210,r:30,t:20,b:36}, xaxis:{title:'Условный индекс влияния', range:[0,100], gridcolor:'#eef1f5'}, yaxis:{autorange:'reversed'}}, config);
+
+Plotly.newPlot('formatSankey', [{
+  type:'sankey', arrangement:'snap',
+  node:{pad:18, thickness:16, line:{color:'#e8ebef',width:1}, label:['Новые кошельки','Финтехи','Trading apps','Web3 / token','Игры / loyalty','MVP / малые','Комьюнити','Полный WL','Встроенный кошелек','Ecosystem wallet','Loyalty / NFT','Light / MVP','Telegram / web'], color:['#eef5ff','#eef5ff','#eef5ff','#f4f3ff','#fffaeb','#fffaeb','#fffaeb','#1f6feb','#12b76a','#7a5af8','#f79009','#f79009','#667085']},
+  link:{source:[0,1,2,3,4,5,6], target:[7,8,8,9,10,11,12], value:[9,8,7,7,5,5,4], color:['rgba(31,111,235,.18)','rgba(18,183,106,.18)','rgba(18,183,106,.18)','rgba(122,90,248,.18)','rgba(247,144,9,.18)','rgba(247,144,9,.18)','rgba(102,112,133,.18)']}
+}], {...layoutBase, margin:{l:10,r:10,t:10,b:10}}, config);
+
+Plotly.newPlot('featureBars', [{
+  type:'bar',
+  x:['Базовый кошелек','Безопасность','Стейблкоины','Обмен','NFT','Стейкинг','AML','Рефералы','Gas Free','Mass Payment','Админка'],
+  y:[10,9,8,8,7,6,7,6,5,4,6],
+  marker:{color:['#1f6feb','#1f6feb','#12b76a','#12b76a','#7a5af8','#7a5af8','#f79009','#f79009','#f79009','#98a2b3','#98a2b3']},
+  hovertemplate:'%{x}: %{y}/10<extra></extra>'
+}], {...layoutBase, margin:{l:42,r:20,t:20,b:120}, yaxis:{title:'Частота / значимость', range:[0,10]}, xaxis:{tickangle:-35}}, config);
+
+Plotly.newPlot('geoMap', [{
+  type:'choropleth',
+  locationmode:'ISO-3',
+  locations:['USA','GBR','DEU','FRA','NLD','CHE','SGP','HKG','KOR','TWN','IND','PHL','NGA','BRA','ARG','COL','MEX','ARE','AUS'],
+  z:[92,78,76,70,64,72,80,74,66,62,70,58,60,68,66,64,55,58,54],
+  text:['США','UK','Германия','Франция','Нидерланды','Швейцария','Сингапур','Гонконг','Южная Корея','Тайвань','Индия','Филиппины','Нигерия','Бразилия','Аргентина','Колумбия','Мексика','ОАЭ','Австралия'],
+  colorscale:[[0,'#f7f8fa'],[0.5,'#d8e8ff'],[1,'#1f6feb']],
+  marker:{line:{color:'#ffffff',width:0.6}},
+  colorbar:{title:'Релевантность'},
+  hovertemplate:'%{text}<br>Оценка: %{z}<extra></extra>'
+}], {...layoutBase, geo:{projection:{type:'natural earth'}, showframe:false, showcoastlines:false, bgcolor:'white'}, margin:{l:0,r:0,t:0,b:0}}, config);
+
+Plotly.newPlot('geoBars', [{
+  type:'bar', orientation:'h',
+  y:['США','Европа / UK','Азия / APAC','Латинская Америка','Развивающиеся рынки','Global crypto-native'],
+  x:[92,82,76,70,68,86],
+  marker:{color:['#1f6feb','#1f6feb','#12b76a','#f79009','#f79009','#7a5af8']},
+  text:['Trading, финтех, бренды','Регулирование, банки, финтех','Web3, gaming, wallets','Стейблкоины, финтех','Digital dollar, переводы','Новые кошельки, Web3'],
+  hovertemplate:'%{y}<br>%{text}<extra></extra>'
+}], {...layoutBase, margin:{l:155,r:20,t:20,b:36}, xaxis:{range:[0,100], title:'Сила сигнала'}, yaxis:{autorange:'reversed'}}, config);
+
+Plotly.newPlot('nicheQuadrant', [{
+  type:'scatter', mode:'markers+text',
+  x:[54,48,42,40,38,30,25],
+  y:[70,66,58,55,52,46,42],
+  text:['MVP<br>wallet','Telegram<br>wallet','Merchant<br>balance','Creator<br>wallet','Event<br>wallet','AI<br>wallets','DePIN<br>wallets'],
+  textposition:'top center',
+  marker:{size:[30,28,24,22,21,20,20], color:['#f79009','#f79009','#f79009','#7a5af8','#7a5af8','#98a2b3','#98a2b3'], opacity:.86, line:{color:'white',width:2}},
+  hovertemplate:'Спрос: %{x}<br>Связь с кошельком: %{y}<extra></extra>'
+}], {...layoutBase, xaxis:{title:'Понятность спроса', range:[0,100]}, yaxis:{title:'Связь с кошельком', range:[0,100]}, shapes:[{type:'line',x0:50,x1:50,y0:0,y1:100,line:{color:'#e8ebef',dash:'dot'}},{type:'line',x0:0,x1:100,y0:50,y1:50,line:{color:'#e8ebef',dash:'dot'}}]}, config);
+
+Plotly.newPlot('rareTreemap', [{
+  type:'treemap',
+  labels:['Редкие сценарии','MVP','Telegram / web','Merchant wallet','Creator / fan','Events','AI / machine','DePIN','Carbon / ESG','Digital identity'],
+  parents:['','Редкие сценарии','Редкие сценарии','Редкие сценарии','Редкие сценарии','Редкие сценарии','Редкие сценарии','Редкие сценарии','Редкие сценарии','Редкие сценарии'],
+  values:[0,22,18,14,12,10,8,7,5,4],
+  marker:{colors:['#ffffff','#f79009','#f79009','#f79009','#7a5af8','#7a5af8','#98a2b3','#98a2b3','#98a2b3','#98a2b3']},
+  textinfo:'label+value',
+  hovertemplate:'%{label}<br>Вес проверки: %{value}<extra></extra>'
+}], {...layoutBase, margin:{l:10,r:10,t:10,b:10}}, config);
+</script>
+</body>
+</html>
