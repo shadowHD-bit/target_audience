@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Дэшборд анализа ЦА - Neobank Platform</title>
+  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --surface: #ffffff;
+      --surface-soft: #f7f8fa;
+      --border: #e8ebef;
+      --text: #111827;
+      --muted: #667085;
+      --muted-2: #98a2b3;
+      --accent: #1f6feb;
+      --accent-soft: #eef5ff;
+      --green: #12b76a;
+      --amber: #f79009;
+      --red: #f04438;
+      --purple: #7a5af8;
+      --shadow: 0 8px 28px rgba(16, 24, 40, 0.06);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.5;
+    }
+
+    .page {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 28px 28px 60px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 24px;
+      padding: 28px;
+      border: 1px solid var(--border);
+      border-radius: 26px;
+      box-shadow: var(--shadow);
+      background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+      margin-bottom: 22px;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+
+    h1 {
+      font-size: 34px;
+      line-height: 1.1;
+      margin-bottom: 12px;
+      letter-spacing: -0.04em;
+    }
+
+    h2 {
+      font-size: 22px;
+      margin-bottom: 10px;
+      letter-spacing: -0.02em;
+    }
+
+    h3 {
+      font-size: 16px;
+      margin-bottom: 8px;
+      letter-spacing: -0.01em;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      max-width: 900px;
+      margin-bottom: 0;
+      font-size: 15px;
+    }
+
+    .tagline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 10px;
+      background: var(--surface-soft);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 12px;
+      color: #344054;
+      white-space: nowrap;
+    }
+
+    .pill.accent { background: var(--accent-soft); color: #1d4ed8; border-color: #d8e8ff; }
+    .pill.green { background: #ecfdf3; color: #027a48; border-color: #d1fadf; }
+    .pill.amber { background: #fffaeb; color: #b54708; border-color: #fedf89; }
+
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+      max-width: 470px;
+    }
+
+    .nav a {
+      color: #344054;
+      text-decoration: none;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 12px;
+      background: #fff;
+    }
+
+    .section {
+      margin-top: 24px;
+      padding: 24px;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      background: #fff;
+      box-shadow: var(--shadow);
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .section-header p {
+      color: var(--muted);
+      margin-bottom: 0;
+      max-width: 860px;
+      font-size: 14px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    .metric-card {
+      padding: 18px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+
+    .metric-title {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .metric-value {
+      font-size: 32px;
+      font-weight: 750;
+      letter-spacing: -0.04em;
+      margin-bottom: 6px;
+    }
+
+    .metric-caption {
+      font-size: 12px;
+      color: var(--muted);
+      margin: 0;
+    }
+
+    .chart-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      overflow: hidden;
+      min-height: 380px;
+    }
+
+    .chart-title {
+      padding: 16px 18px 0;
+      margin-bottom: 0;
+      font-size: 15px;
+    }
+
+    .chart-desc {
+      padding: 4px 18px 0;
+      color: var(--muted);
+      font-size: 12px;
+      margin: 0;
+    }
+
+    .plot {
+      width: 100%;
+      height: 350px;
+    }
+
+    .plot.tall { height: 470px; }
+    .plot.short { height: 300px; }
+
+    .note {
+      border: 1px solid #d8e8ff;
+      background: var(--accent-soft);
+      color: #184a90;
+      border-radius: 18px;
+      padding: 16px 18px;
+      font-size: 14px;
+    }
+
+    .segment-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      background: #fff;
+    }
+
+    .segment-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .segment-name {
+      font-size: 17px;
+      font-weight: 750;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+
+    .segment-meta {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 12px;
+    }
+
+    .badge {
+      padding: 6px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 650;
+      white-space: nowrap;
+    }
+
+    .badge.primary { background: #ecfdf3; color: #027a48; }
+    .badge.medium { background: #eff4ff; color: #3538cd; }
+    .badge.check { background: #fffaeb; color: #b54708; }
+    .badge.api { background: #fef3f2; color: #b42318; }
+
+    .kv {
+      display: grid;
+      grid-template-columns: 112px 1fr;
+      gap: 8px 12px;
+      font-size: 12px;
+      margin-top: 10px;
+    }
+
+    .kv .k { color: var(--muted); }
+    .kv .v { color: #344054; }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      font-size: 13px;
+    }
+
+    th, td {
+      text-align: left;
+      vertical-align: top;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background: var(--surface-soft);
+      font-size: 12px;
+      color: #344054;
+      font-weight: 700;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    td { color: #344054; }
+
+    .footer {
+      margin-top: 24px;
+      color: var(--muted-2);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    @media (max-width: 980px) {
+      .topbar { flex-direction: column; }
+      .nav { justify-content: flex-start; max-width: none; }
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+      .plot, .plot.tall { height: 360px; }
+      .section-header { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div>
+        <h1>Анализ ЦА необанка</h1>
+        <p class="subtitle">B2B-платформа для запуска цифрового банковского продукта под брендом клиента. Продукт не является банком, не выдает лицензию и предполагает банк-партнера, карточного партнера и правовую модель на стороне клиента</p>
+        <div class="tagline">
+          <span class="pill accent">Фокус - банковская оболочка под брендом</span>
+          <span class="pill">B2B</span>
+          <span class="pill">White-label</span>
+          <span class="pill">BaaS</span>
+          <span class="pill green">4 основных сегмента</span>
+          <span class="pill amber">Крипто и карты как усилители</span>
+        </div>
+      </div>
+      <nav class="nav">
+        <a href="#summary">Обзор</a>
+        <a href="#segments">Сегменты</a>
+        <a href="#modules">Модули</a>
+        <a href="#notfocus">Не фокус</a>
+        <a href="#pains">Боли</a>
+        <a href="#formats">Форматы</a>
+        <a href="#geo">География</a>
+        <a href="#rare">Ниши</a>
+      </nav>
+    </header>
+
+    <section class="section" id="summary">
+      <div class="section-header">
+        <div>
+          <h2>Краткий результат</h2>
+          <p>Спрос делится на полный запуск необанка, бизнес-банкинг, встроенные финансы, гибрид фиат + крипто и отдельные модули</p>
+        </div>
+      </div>
+
+      <div class="grid grid-4">
+        <div class="metric-card">
+          <div class="metric-title">Основной фокус</div>
+          <div class="metric-value">4</div>
+          <p class="metric-caption">WL необанк, бизнес-банкинг, встроенные финансы, гибрид фиат + крипто</p>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">Модульный фокус</div>
+          <div class="metric-value">3</div>
+          <p class="metric-caption">карты, выплаты, криптосервисы с фиатом</p>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">Стратегические клиенты</div>
+          <div class="metric-value">3</div>
+          <p class="metric-caption">EMI / PI, банки, платформы с BaaS</p>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">Отсечь из ЦА</div>
+          <div class="metric-value">6</div>
+          <p class="metric-caption">только лицензия, банк, карты, KYC, процессинг, кошелек</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2" style="margin-top:16px">
+        <div class="chart-card">
+          <h3 class="chart-title">Распределение найденного спроса</h3>
+          <p class="chart-desc">Условная доля сигналов по типам спроса</p>
+          <div id="demandSplit" class="plot short"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Приоритет сегментов</h3>
+          <p class="chart-desc">Связь с продуктом и коммерческий потенциал</p>
+          <div id="priorityBubble" class="plot short"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="segments">
+      <div class="section-header">
+        <div>
+          <h2>Итоговая модель сегментов</h2>
+          <p>Сегменты сгруппированы по тому, какую роль платформа играет в бизнесе клиента</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2" style="margin-bottom:16px">
+        <div class="chart-card">
+          <h3 class="chart-title">Карта сегментов</h3>
+          <p class="chart-desc">Сила сегмента по итоговой модели</p>
+          <div id="segmentTypeStrength" class="plot"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Роль продукта для клиента</h3>
+          <p class="chart-desc">Что именно покупает клиент</p>
+          <div id="platformRoleBars" class="plot"></div>
+        </div>
+      </div>
+
+      <div class="grid grid-3">
+        <div class="segment-card">
+          <div class="segment-top"><div><div class="segment-name">Запуск WL необанка</div><div class="segment-meta">Полная банковская оболочка</div></div><span class="badge primary">ICP-1</span></div>
+          <p>Клиент запускает цифровой банк под своим брендом на базе готового приложения и бэк-офиса</p>
+          <div class="kv"><div class="k">Сценарий</div><div class="v">Новый необанк</div><div class="k">Модули</div><div class="v">ядро, счета, карты, KYC / KYB, веб, мобильные приложения, бэк-офис</div><div class="k">Роли</div><div class="v">CEO, продукт, CTO, комплаенс</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div><div class="segment-name">Бизнес-банкинг</div><div class="segment-meta">Счета и карты для компаний</div></div><span class="badge primary">ICP-2</span></div>
+          <p>Продукт для компаний, предпринимателей и команд, где важны роли, лимиты, отчеты и KYB</p>
+          <div class="kv"><div class="k">Сценарий</div><div class="v">Бизнес-счета и карты</div><div class="k">Модули</div><div class="v">IBAN, карты сотрудников, лимиты, тарифы, отчеты, роли</div><div class="k">Роли</div><div class="v">продукт, финансы, операции, комплаенс</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div><div class="segment-name">Встроенные финансы</div><div class="segment-meta">Банковские функции внутри платформы</div></div><span class="badge primary">ICP-3</span></div>
+          <p>Платформа с аудиторией встраивает счета, карты и платежи в свой продукт через API</p>
+          <div class="kv"><div class="k">Сценарий</div><div class="v">Финансы внутри SaaS или платформы</div><div class="k">Модули</div><div class="v">BaaS API, вебхуки, счета, карты, KYC / KYB, учет</div><div class="k">Роли</div><div class="v">партнерства, продукт, CTO, юристы</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div><div class="segment-name">Фиат + крипто необанк</div><div class="segment-meta">Гибридный финансовый продукт</div></div><span class="badge primary">ICP-4</span></div>
+          <p>Клиент объединяет банковские счета, карты, криптосчета, обмен и криптокарты</p>
+          <div class="kv"><div class="k">Сценарий</div><div class="v">Единый фиатно-криптовалютный счет</div><div class="k">Модули</div><div class="v">банк, карты, криптомодуль, обмен, AML, ликвидность</div><div class="k">Роли</div><div class="v">CEO, продукт, CTO, риск, комплаенс</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div><div class="segment-name">Карточные продукты</div><div class="segment-meta">Карты и контроль расходов</div></div><span class="badge medium">Модульный</span></div>
+          <p>Клиенту нужны виртуальные и физические карты, лимиты, история, статусы и операции по картам</p>
+          <div class="kv"><div class="k">Сценарий</div><div class="v">Карты для сотрудников или клиентов</div><div class="k">Модули</div><div class="v">карты, лимиты, тарифы, уведомления, отчеты</div><div class="k">Роли</div><div class="v">card lead, финансы, операции</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div><div class="segment-name">Переводы и выплаты</div><div class="segment-meta">Мультивалютность и удаленные команды</div></div><span class="badge medium">Средний</span></div>
+          <p>Сервисы выплат, переводов и зарплат добавляют счета, карты, курсы валют и иногда криптоопцию</p>
+          <div class="kv"><div class="k">Сценарий</div><div class="v">Выплаты и трансграничные операции</div><div class="k">Модули</div><div class="v">счета, карты, курсы, лимиты, KYC / KYB</div><div class="k">Роли</div><div class="v">payments, продукт, комплаенс</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="modules">
+      <div class="section-header">
+        <div>
+          <h2>Модули продукта</h2>
+          <p>Карта показывает, какие модули важнее для разных сегментов</p>
+        </div>
+      </div>
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Сегменты × модули</h3>
+          <p class="chart-desc">Оценка важности модулей по сегментам</p>
+          <div id="moduleHeatmap" class="plot tall"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Запросы по функционалу</h3>
+          <p class="chart-desc">Что чаще всего нужно B2B-клиенту</p>
+          <div id="featureBars" class="plot tall"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="notfocus">
+      <div class="section-header">
+        <div>
+          <h2>Что не является прямой ЦА</h2>
+          <p>Важно отделить платформу необанка от отдельных сервисов</p>
+        </div>
+      </div>
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Платформа vs отдельный модуль</h3>
+          <p class="chart-desc">Чем выше и правее, тем ближе к полной neobank platform</p>
+          <div id="platformMatrix" class="plot"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Что нужно отсекать</h3>
+          <p class="chart-desc">Спрос на отдельные сервисы не стоит смешивать с ЦА платформы</p>
+          <div id="notFocusTreemap" class="plot"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="pains">
+      <div class="section-header">
+        <div>
+          <h2>Карта B2B-болей</h2>
+          <p>Главная боль - не интерфейс, а безопасное управление деньгами, партнерами и операциями</p>
+        </div>
+      </div>
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Боли по сегментам</h3>
+          <p class="chart-desc">Оценка выраженности по ключевым сегментам</p>
+          <div id="painHeatmap" class="plot tall"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Причины сложности покупки</h3>
+          <p class="chart-desc">Что сильнее всего влияет на продажу и внедрение</p>
+          <div id="painReasons" class="plot tall"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="formats">
+      <div class="section-header">
+        <div>
+          <h2>Форматы поставки</h2>
+          <p>Разные сегменты требуют разного уровня контроля</p>
+        </div>
+      </div>
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Связь сегментов и форматов</h3>
+          <p class="chart-desc">Какой формат лучше подходит каждому сегменту</p>
+          <div id="formatSankey" class="plot tall"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Контроль vs скорость запуска</h3>
+          <p class="chart-desc">Чем больше контроля, тем сложнее запуск</p>
+          <div id="deliveryQuadrant" class="plot tall"></div>
+        </div>
+      </div>
+      <table style="margin-top:16px">
+        <thead><tr><th>Формат</th><th>Для кого</th><th>Суть</th></tr></thead>
+        <tbody>
+          <tr><td>White-label SaaS</td><td>быстрые запуски, новые необанки</td><td>клиент быстрее выходит на рынок, но меньше контролирует инфраструктуру</td></tr>
+          <tr><td>White-label self-host</td><td>регулируемые финтехи, крипто-необанки</td><td>больше контроля над средой и данными</td></tr>
+          <tr><td>White-label + исходники фронта</td><td>брендированные продукты с кастомным интерфейсом</td><td>клиент может сильнее менять веб и мобильный слой</td></tr>
+          <tr><td>White-label + полные исходники</td><td>интеграторы, банки, крупные финтехи</td><td>максимум контроля, но выше требования к команде клиента</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section" id="geo">
+      <div class="section-header">
+        <div>
+          <h2>География спроса</h2>
+          <p>Карта отражает направленность открытых сигналов, а не точный объем рынка</p>
+        </div>
+      </div>
+      <div class="note" style="margin-bottom:14px">
+        Для запуска в каждой стране нужны отдельные проверки: лицензия, банк-партнер, карты, KYC / KYB, налоги, санкции и правила хранения клиентских средств
+      </div>
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Региональная релевантность</h3>
+          <p class="chart-desc">Качественная оценка по открытым сигналам</p>
+          <div id="geoMap" class="plot tall"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Сегменты по регионам</h3>
+          <p class="chart-desc">Какие сценарии сильнее проявляются по географиям</p>
+          <div id="geoBars" class="plot tall"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="rare">
+      <div class="section-header">
+        <div>
+          <h2>Проверяемые ниши</h2>
+          <p>Ниши интересны, но требуют отдельной проверки спроса, права и партнеров</p>
+        </div>
+      </div>
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Ниши по потенциалу и сложности</h3>
+          <p class="chart-desc">Чем выше точка, тем больше потенциал, чем правее, тем сложнее запуск</p>
+          <div id="nicheQuadrant" class="plot"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Карта нишевых сценариев</h3>
+          <p class="chart-desc">Что можно проверять после основных сегментов</p>
+          <div id="rareTreemap" class="plot"></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer">Дэшборд построен по итоговой модели B2B-ЦА Neobank Platform</div>
+  </main>
+
+<script>
+const config = {responsive: true, displayModeBar: false};
+const font = {family: 'Inter, Arial, sans-serif', color: '#111827'};
+const layoutBase = {
+  paper_bgcolor: 'white',
+  plot_bgcolor: 'white',
+  font,
+  margin: {l: 42, r: 24, t: 22, b: 48},
+  xaxis: {gridcolor: '#eef1f5', zerolinecolor: '#eef1f5'},
+  yaxis: {gridcolor: '#eef1f5', zerolinecolor: '#eef1f5'}
+};
+
+Plotly.newPlot('demandSplit', [{
+  type: 'pie',
+  hole: 0.62,
+  labels: ['Полный необанк', 'Бизнес-банкинг', 'Встроенные финансы', 'Фиат + крипто', 'Отдельные модули'],
+  values: [24, 22, 21, 17, 16],
+  textinfo: 'label+percent',
+  hovertemplate: '%{label}<br>%{value}%<extra></extra>',
+  marker: {colors: ['#1f6feb', '#12b76a', '#7a5af8', '#f79009', '#98a2b3'], line: {color: 'white', width: 3}}
+}], {...layoutBase, margin: {l: 10, r: 10, t: 18, b: 18}, showlegend: false}, config);
+
+Plotly.newPlot('priorityBubble', [{
+  type: 'scatter', mode: 'markers+text',
+  x: [88, 90, 84, 78, 68, 64, 58, 50, 38, 28],
+  y: [90, 92, 86, 82, 72, 68, 64, 58, 45, 35],
+  text: ['WL<br>необанк', 'Бизнес<br>банкинг', 'Встроенные<br>финансы', 'Фиат +<br>крипто', 'Карты /<br>расходы', 'Переводы /<br>выплаты', 'Крипто +<br>фиат', 'EMI / PI<br>банки', 'Исламский<br>банкинг', 'Только<br>модуль'],
+  textposition: 'top center',
+  marker: {size: [34, 34, 32, 30, 26, 24, 24, 22, 20, 18], color: ['#1f6feb','#12b76a','#7a5af8','#f79009','#12b76a','#f79009','#f79009','#98a2b3','#7a5af8','#98a2b3'], opacity: 0.86, line: {color: 'white', width: 2}},
+  hovertemplate: 'Потенциал: %{x}<br>Связь с платформой: %{y}<extra></extra>'
+}], {...layoutBase,
+  xaxis: {title: 'Коммерческий потенциал', range: [0, 100], gridcolor: '#eef1f5'},
+  yaxis: {title: 'Связь с платформой', range: [0, 100], gridcolor: '#eef1f5'},
+  shapes: [
+    {type:'line', x0:50, x1:50, y0:0, y1:100, line:{color:'#e8ebef', dash:'dot'}},
+    {type:'line', x0:0, x1:100, y0:50, y1:50, line:{color:'#e8ebef', dash:'dot'}}
+  ]
+}, config);
+
+Plotly.newPlot('segmentTypeStrength', [{
+  type:'treemap',
+  labels:['Все сегменты','Основной фокус','WL необанк','Бизнес-банкинг','Встроенные финансы','Фиат + крипто','Модульный фокус','Карты / расходы','Переводы / выплаты','Крипто + фиат','Стратегические','EMI / PI','Банки','BaaS-провайдер','Проверяемые ниши','Исламский банкинг','Private crypto banking','Digital dollar accounts'],
+  parents:['','Все сегменты','Основной фокус','Основной фокус','Основной фокус','Основной фокус','Все сегменты','Модульный фокус','Модульный фокус','Модульный фокус','Все сегменты','Стратегические','Стратегические','Стратегические','Все сегменты','Проверяемые ниши','Проверяемые ниши','Проверяемые ниши'],
+  values:[0,0,24,23,22,18,0,16,14,13,0,12,11,10,0,9,8,8],
+  marker:{colors:['#ffffff','#eef5ff','#1f6feb','#12b76a','#7a5af8','#f79009','#fffaeb','#12b76a','#f79009','#f79009','#f7f8fa','#98a2b3','#98a2b3','#98a2b3','#f4f3ff','#7a5af8','#7a5af8','#7a5af8']},
+  textinfo:'label+value',
+  hovertemplate:'%{label}<br>Условная сила: %{value}<extra></extra>'
+}], {...layoutBase, margin:{l:10,r:10,t:10,b:10}}, config);
+
+Plotly.newPlot('platformRoleBars', [{
+  type:'bar', orientation:'h',
+  y:['Полная банковская оболочка','Бизнес-счета и карты','Банковские функции через API','Фиат + крипто + карты','Карточный продукт','Мультивалютные выплаты','Цифровой слой для банка'],
+  x:[95,92,88,82,74,68,62],
+  marker:{color:['#1f6feb','#12b76a','#7a5af8','#f79009','#12b76a','#f79009','#98a2b3']},
+  hovertemplate:'%{y}: %{x}<extra></extra>'
+}], {...layoutBase, margin:{l:215,r:24,t:20,b:36}, xaxis:{title:'Условная релевантность', range:[0,100], gridcolor:'#eef1f5'}, yaxis:{autorange:'reversed'}}, config);
+
+const moduleSegments = ['WL необанк','Бизнес-банкинг','Встроенные финансы','Фиат + крипто','Карты / расходы','Переводы / выплаты','EMI / PI'];
+const modules = ['Ядро','Банк','KYC / KYB','2FA','Веб','Бэк-офис','Карты','Криптокарта','Крипто','BaaS API','Процессинг','Мобильные'];
+const moduleZ = [
+  [10,10,9,8,9,10,9,6,5,6,4,10],
+  [9,10,10,8,8,10,9,4,3,6,4,7],
+  [8,9,9,7,5,8,9,3,3,10,4,5],
+  [9,9,10,8,8,10,8,10,10,7,8,9],
+  [7,6,7,7,5,8,10,4,2,7,3,6],
+  [8,10,8,7,6,8,8,5,5,6,4,7],
+  [10,10,10,9,8,10,8,6,6,9,4,8]
+];
+Plotly.newPlot('moduleHeatmap', [{
+  type:'heatmap', x:modules, y:moduleSegments, z:moduleZ,
+  colorscale:[[0,'#f7f8fa'],[0.5,'#d8e8ff'],[1,'#1f6feb']],
+  showscale:true, colorbar:{title:'Важность'},
+  hovertemplate:'%{y}<br>%{x}: %{z}/10<extra></extra>'
+}], {...layoutBase, margin:{l:155,r:20,t:20,b:120}, xaxis:{tickangle:-35}, yaxis:{autorange:'reversed'}}, config);
+
+Plotly.newPlot('featureBars', [{
+  type:'bar',
+  x:['Счета','Бэк-офис','KYC / KYB','Карты','Лимиты','Отчеты','BaaS API','Крипто','Сверка','Уведомления','Мобильные'],
+  y:[10,10,9,9,8,9,8,7,9,7,8],
+  marker:{color:['#1f6feb','#1f6feb','#12b76a','#12b76a','#f79009','#1f6feb','#7a5af8','#f79009','#1f6feb','#98a2b3','#12b76a']},
+  hovertemplate:'%{x}: %{y}/10<extra></extra>'
+}], {...layoutBase, margin:{l:42,r:20,t:20,b:120}, yaxis:{title:'Значимость', range:[0,10]}, xaxis:{tickangle:-35}}, config);
+
+Plotly.newPlot('platformMatrix', [{
+  type: 'scatter', mode: 'markers+text',
+  x: [88, 84, 82, 76, 64, 58, 36, 32, 28, 24, 20, 18],
+  y: [92, 86, 84, 80, 72, 68, 44, 38, 35, 30, 26, 22],
+  text: ['WL<br>необанк', 'Бизнес<br>банкинг', 'Встроенные<br>финансы', 'Фиат +<br>крипто', 'Карточный<br>продукт', 'Выплаты', 'Только<br>лицензия', 'Только<br>банк', 'Только<br>KYC', 'Только<br>карты', 'Только<br>кошелек', 'Только<br>процессинг'],
+  textposition: 'middle center',
+  marker: {size: [44,40,40,38,34,32,28,28,26,26,26,26], color: ['#1f6feb','#12b76a','#7a5af8','#f79009','#12b76a','#f79009','#98a2b3','#98a2b3','#98a2b3','#98a2b3','#98a2b3','#98a2b3'], opacity: 0.18, line: {color: ['#1f6feb','#12b76a','#7a5af8','#f79009','#12b76a','#f79009','#98a2b3','#98a2b3','#98a2b3','#98a2b3','#98a2b3','#98a2b3'], width: 2}}
+}], {...layoutBase,
+  xaxis: {title: 'Собственный интерфейс и бэк-офис', range: [0, 100], gridcolor: '#eef1f5'},
+  yaxis: {title: 'Счета / карты / операции как продукт', range: [0, 100], gridcolor: '#eef1f5'},
+  shapes: [
+    {type:'rect', x0:50, x1:100, y0:50, y1:100, fillcolor:'#eef5ff', opacity:0.45, line:{width:0}},
+    {type:'rect', x0:0, x1:50, y0:0, y1:50, fillcolor:'#f7f8fa', opacity:0.7, line:{width:0}}
+  ],
+  annotations: [
+    {x:76, y:98, text:'ЦА платформы', showarrow:false, font:{color:'#1f6feb', size:12}},
+    {x:25, y:8, text:'Отдельный сервис / партнер', showarrow:false, font:{color:'#667085', size:12}}
+  ]
+}, config);
+
+Plotly.newPlot('notFocusTreemap', [{
+  type:'treemap',
+  labels:['Не основной фокус','Только лицензия','Только банк-партнер','Только карты','Только KYC / KYB','Только криптопроцессинг','Только кошелек','Только платежный шлюз'],
+  parents:['','Не основной фокус','Не основной фокус','Не основной фокус','Не основной фокус','Не основной фокус','Не основной фокус','Не основной фокус'],
+  values:[0,18,17,15,14,14,12,10],
+  marker:{colors:['#ffffff','#98a2b3','#98a2b3','#98a2b3','#98a2b3','#f79009','#f79009','#98a2b3']},
+  textinfo:'label+value',
+  hovertemplate:'%{label}<br>Вес отсечения: %{value}<extra></extra>'
+}], {...layoutBase, margin:{l:10,r:10,t:10,b:10}}, config);
+
+const painSegments = ['WL необанк','Бизнес-банкинг','Встроенные финансы','Фиат + крипто','Карты','EMI / PI'];
+const pains = ['Лицензия / партнер','Учет средств','Сверка','KYC / KYB','Карты','Крипто AML','DORA / безопасность','Интеграции','Поддержка'];
+const painZ = [
+  [10,9,9,9,8,5,8,8,8],
+  [9,10,10,10,9,3,8,7,8],
+  [10,10,10,9,9,3,9,10,8],
+  [10,10,10,10,8,10,9,9,9],
+  [8,8,9,7,10,3,7,8,8],
+  [10,10,10,10,8,6,10,10,9]
+];
+Plotly.newPlot('painHeatmap', [{
+  type:'heatmap', x:pains, y:painSegments, z:painZ,
+  colorscale:[[0,'#f7f8fa'],[0.5,'#d8e8ff'],[1,'#1f6feb']],
+  showscale:true, colorbar:{title:'Сила'},
+  hovertemplate:'%{y}<br>%{x}: %{z}/10<extra></extra>'
+}], {...layoutBase, margin:{l:155,r:20,t:20,b:130}, xaxis:{tickangle:-35}, yaxis:{autorange:'reversed'}}, config);
+
+Plotly.newPlot('painReasons', [{
+  type:'bar', orientation:'h',
+  y:['Лицензия и банк-партнер','Учет средств и сверка','KYC / KYB и проверки','Бэк-офис и операции','Карты и споры','Безопасность и DORA','Крипто AML и ликвидность','Интеграции и запуск'],
+  x:[96,94,90,88,82,80,78,76],
+  text:[96,94,90,88,82,80,78,76],
+  textposition:'outside',
+  marker:{color:['#1f6feb','#1f6feb','#12b76a','#1f6feb','#12b76a','#7a5af8','#f79009','#98a2b3']},
+  hovertemplate:'%{y}: %{x}<extra></extra>'
+}], {...layoutBase, margin:{l:210,r:30,t:20,b:36}, xaxis:{title:'Условный индекс влияния', range:[0,100], gridcolor:'#eef1f5'}, yaxis:{autorange:'reversed'}}, config);
+
+Plotly.newPlot('formatSankey', [{
+  type:'sankey', arrangement:'snap',
+  node:{pad:18, thickness:16, line:{color:'#e8ebef',width:1}, label:['WL необанк','Бизнес-банкинг','Встроенные финансы','Фиат + крипто','Карты / расходы','EMI / PI','Интеграторы','White-label SaaS','Self-host','Исходники фронта','Полные исходники','BaaS API'], color:['#eef5ff','#ecfdf3','#f4f3ff','#fffaeb','#ecfdf3','#f7f8fa','#f7f8fa','#1f6feb','#12b76a','#7a5af8','#f79009','#667085']},
+  link:{source:[0,1,2,3,4,5,6,2], target:[7,7,11,8,7,8,10,9], value:[9,8,9,7,6,6,5,4], color:['rgba(31,111,235,.18)','rgba(18,183,106,.18)','rgba(122,90,248,.18)','rgba(247,144,9,.18)','rgba(18,183,106,.18)','rgba(18,183,106,.18)','rgba(247,144,9,.18)','rgba(122,90,248,.18)']}
+}], {...layoutBase, margin:{l:10,r:10,t:10,b:10}}, config);
+
+Plotly.newPlot('deliveryQuadrant', [{
+  type:'scatter', mode:'markers+text',
+  x:[82,60,48,30],
+  y:[35,62,72,92],
+  text:['SaaS', 'Self-host', 'Исходники<br>фронта', 'Полные<br>исходники'],
+  textposition:'top center',
+  marker:{size:[34,32,30,30], color:['#1f6feb','#12b76a','#7a5af8','#f79009'], opacity:.86, line:{color:'white',width:2}},
+  hovertemplate:'Скорость запуска: %{x}<br>Контроль: %{y}<extra></extra>'
+}], {...layoutBase, xaxis:{title:'Скорость запуска', range:[0,100]}, yaxis:{title:'Контроль клиента', range:[0,100]}, shapes:[{type:'line',x0:50,x1:50,y0:0,y1:100,line:{color:'#e8ebef',dash:'dot'}},{type:'line',x0:0,x1:100,y0:50,y1:50,line:{color:'#e8ebef',dash:'dot'}}]}, config);
+
+Plotly.newPlot('geoMap', [{
+  type:'choropleth',
+  locationmode:'ISO-3',
+  locations:['USA','GBR','DEU','FRA','NLD','CHE','ESP','ITA','SWE','FIN','ARE','SAU','EGY','MYS','SGP','PHL','IND','BRA','MEX','COL','PER','AUS'],
+  z:[84,86,82,80,78,72,68,66,70,72,78,74,60,76,82,66,72,86,74,70,62,74],
+  text:['США','UK','Германия','Франция','Нидерланды','Швейцария','Испания','Италия','Швеция','Финляндия','ОАЭ','Саудовская Аравия','Египет','Малайзия','Сингапур','Филиппины','Индия','Бразилия','Мексика','Колумбия','Перу','Австралия'],
+  colorscale:[[0,'#f7f8fa'],[0.5,'#d8e8ff'],[1,'#1f6feb']],
+  marker:{line:{color:'#ffffff',width:0.6}},
+  colorbar:{title:'Релевантность'},
+  hovertemplate:'%{text}<br>Оценка: %{z}<extra></extra>'
+}], {...layoutBase, geo:{projection:{type:'natural earth'}, showframe:false, showcoastlines:false, bgcolor:'white'}, margin:{l:0,r:0,t:0,b:0}}, config);
+
+Plotly.newPlot('geoBars', [{
+  type:'bar', orientation:'h',
+  y:['Европа / UK','США','LATAM','MENA','APAC','Global SaaS'],
+  x:[90,84,82,78,80,86],
+  marker:{color:['#1f6feb','#1f6feb','#f79009','#7a5af8','#12b76a','#7a5af8']},
+  text:['EMI, BaaS, SME, DORA, MiCA','карты, BaaS, expense','цифровые счета, карты, stablecoin','необанки, исламский банкинг, переводы','цифровые банки, мобильный финтех','встроенные финансы'],
+  hovertemplate:'%{y}<br>%{text}<extra></extra>'
+}], {...layoutBase, margin:{l:135,r:20,t:20,b:36}, xaxis:{range:[0,100], title:'Сила сигнала'}, yaxis:{autorange:'reversed'}}, config);
+
+Plotly.newPlot('nicheQuadrant', [{
+  type:'scatter', mode:'markers+text',
+  x:[55,70,68,62,74,58,64,52],
+  y:[76,82,78,70,86,66,72,58],
+  text:['Исламский<br>банкинг','Stablecoin<br>карта','Digital dollar<br>account','Private<br>crypto bank','BaaS<br>provider', 'Creator / gig<br>banking','Crypto<br>merchant bank','Card-led<br>loyalty'],
+  textposition:'top center',
+  marker:{size:[28,30,28,25,30,24,25,22], color:['#7a5af8','#f79009','#f79009','#7a5af8','#1f6feb','#12b76a','#f79009','#98a2b3'], opacity:.86, line:{color:'white',width:2}},
+  hovertemplate:'Сложность: %{x}<br>Потенциал: %{y}<extra></extra>'
+}], {...layoutBase, xaxis:{title:'Сложность запуска', range:[0,100]}, yaxis:{title:'Потенциал', range:[0,100]}, shapes:[{type:'line',x0:50,x1:50,y0:0,y1:100,line:{color:'#e8ebef',dash:'dot'}},{type:'line',x0:0,x1:100,y0:50,y1:50,line:{color:'#e8ebef',dash:'dot'}}]}, config);
+
+Plotly.newPlot('rareTreemap', [{
+  type:'treemap',
+  labels:['Проверяемые ниши','Исламский банкинг','Stablecoin card','Digital dollar accounts','Private crypto bank','Crypto merchant bank','Creator / gig banking','BaaS provider in a box','Card-led loyalty','Accounting-native bank'],
+  parents:['','Проверяемые ниши','Проверяемые ниши','Проверяемые ниши','Проверяемые ниши','Проверяемые ниши','Проверяемые ниши','Проверяемые ниши','Проверяемые ниши','Проверяемые ниши'],
+  values:[0,16,18,16,10,12,11,15,8,14],
+  marker:{colors:['#ffffff','#7a5af8','#f79009','#f79009','#7a5af8','#f79009','#12b76a','#1f6feb','#98a2b3','#12b76a']},
+  textinfo:'label+value',
+  hovertemplate:'%{label}<br>Вес проверки: %{value}<extra></extra>'
+}], {...layoutBase, margin:{l:10,r:10,t:10,b:10}}, config);
+</script>
+</body>
+</html>
