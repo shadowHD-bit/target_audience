@@ -1,1 +1,842 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Дэшборд анализа ЦА - Crypto API</title>
+  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --surface: #ffffff;
+      --surface-soft: #f7f8fa;
+      --border: #e8ebef;
+      --text: #111827;
+      --muted: #667085;
+      --muted-2: #98a2b3;
+      --accent: #1f6feb;
+      --accent-soft: #eef5ff;
+      --green: #12b76a;
+      --amber: #f79009;
+      --red: #f04438;
+      --purple: #7a5af8;
+      --shadow: 0 8px 28px rgba(16, 24, 40, 0.06);
+      --radius: 18px;
+    }
 
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.5;
+    }
+
+    .page {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 28px 28px 60px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 24px;
+      padding: 28px;
+      border: 1px solid var(--border);
+      border-radius: 26px;
+      box-shadow: var(--shadow);
+      background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+      margin-bottom: 22px;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+
+    h1 {
+      font-size: 34px;
+      line-height: 1.1;
+      margin-bottom: 12px;
+      letter-spacing: -0.04em;
+    }
+
+    h2 {
+      font-size: 22px;
+      margin-bottom: 10px;
+      letter-spacing: -0.02em;
+    }
+
+    h3 {
+      font-size: 16px;
+      margin-bottom: 8px;
+      letter-spacing: -0.01em;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      max-width: 920px;
+      margin-bottom: 0;
+      font-size: 15px;
+    }
+
+    .tagline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 10px;
+      background: var(--surface-soft);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 12px;
+      color: #344054;
+      white-space: nowrap;
+    }
+
+    .pill.accent { background: var(--accent-soft); color: #1d4ed8; border-color: #d8e8ff; }
+    .pill.green { background: #ecfdf3; color: #027a48; border-color: #d1fadf; }
+    .pill.amber { background: #fffaeb; color: #b54708; border-color: #fedf89; }
+
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+      max-width: 510px;
+    }
+
+    .nav a {
+      color: #344054;
+      text-decoration: none;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 12px;
+      background: #fff;
+    }
+
+    .section {
+      margin-top: 24px;
+      padding: 24px;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      background: #fff;
+      box-shadow: var(--shadow);
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .section-header p {
+      color: var(--muted);
+      margin-bottom: 0;
+      max-width: 900px;
+      font-size: 14px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    .metric-card {
+      padding: 18px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+
+    .metric-title {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .metric-value {
+      font-size: 32px;
+      font-weight: 750;
+      letter-spacing: -0.04em;
+      margin-bottom: 6px;
+    }
+
+    .metric-caption {
+      font-size: 12px;
+      color: var(--muted);
+      margin: 0;
+    }
+
+    .chart-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      overflow: hidden;
+      min-height: 380px;
+    }
+
+    .chart-title {
+      padding: 16px 18px 0;
+      margin-bottom: 0;
+      font-size: 15px;
+    }
+
+    .chart-desc {
+      padding: 4px 18px 0;
+      color: var(--muted);
+      font-size: 12px;
+      margin: 0;
+    }
+
+    .plot {
+      width: 100%;
+      height: 350px;
+    }
+
+    .plot.tall { height: 470px; }
+    .plot.short { height: 300px; }
+
+    .note {
+      border: 1px solid #d8e8ff;
+      background: var(--accent-soft);
+      color: #184a90;
+      border-radius: 18px;
+      padding: 16px 18px;
+      font-size: 14px;
+    }
+
+    .segment-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      background: #fff;
+    }
+
+    .segment-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .segment-name {
+      font-size: 17px;
+      font-weight: 750;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+
+    .segment-meta {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 12px;
+    }
+
+    .badge {
+      padding: 6px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 650;
+      white-space: nowrap;
+    }
+
+    .badge.primary { background: #ecfdf3; color: #027a48; }
+    .badge.medium { background: #eff4ff; color: #3538cd; }
+    .badge.check { background: #fffaeb; color: #b54708; }
+    .badge.api { background: #fef3f2; color: #b42318; }
+
+    .kv {
+      display: grid;
+      grid-template-columns: 112px 1fr;
+      gap: 8px 12px;
+      font-size: 12px;
+      margin-top: 10px;
+    }
+
+    .kv .k { color: var(--muted); }
+    .kv .v { color: #344054; }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      font-size: 13px;
+    }
+
+    th, td {
+      text-align: left;
+      vertical-align: top;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background: var(--surface-soft);
+      font-size: 12px;
+      color: #344054;
+      font-weight: 700;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    td { color: #344054; }
+
+    .two-col-text {
+      columns: 2 320px;
+      column-gap: 24px;
+      color: #344054;
+      font-size: 14px;
+    }
+
+    .footer {
+      margin-top: 24px;
+      color: var(--muted-2);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    @media (max-width: 980px) {
+      .topbar { flex-direction: column; }
+      .nav { justify-content: flex-start; max-width: none; }
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+      .plot, .plot.tall { height: 360px; }
+      .section-header { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div>
+        <h1>Анализ ЦА Crypto API</h1>
+        <p class="subtitle">Итоговый дэшборд по результатам анализа B2B-целевой аудитории. Фокус - компании, которым нужен технический слой для встраивания криптоопераций в собственный продукт, а не готовый пользовательский кошелек или отдельный платежный кабинет.</p>
+        <div class="tagline">
+          <span class="pill accent">Фокус - инфраструктурный API</span>
+          <span class="pill">B2B</span>
+          <span class="pill">Кошельки, данные, события</span>
+          <span class="pill">Платежи и выплаты</span>
+          <span class="pill green">5 основных сегментов</span>
+          <span class="pill amber">Смежные продукты отделены</span>
+        </div>
+      </div>
+      <nav class="nav">
+        <a href="#summary">Обзор</a>
+        <a href="#segments">Сегменты</a>
+        <a href="#contours">Контуры</a>
+        <a href="#evidence">Кейсы</a>
+        <a href="#pains">Боли</a>
+        <a href="#functions">Функции</a>
+        <a href="#geo">География</a>
+        <a href="#rare">Редкие ниши</a>
+        <a href="#conclusions">Выводы</a>
+      </nav>
+    </header>
+
+    <section class="section" id="summary">
+      <div class="section-header">
+        <div>
+          <h2>Краткий результат</h2>
+          <p>Спрос разделен на основной API-фокус, смежные направления, стратегические сегменты, проверяемые ниши и продукты, которые лучше вынести за рамки Crypto API</p>
+        </div>
+      </div>
+
+      <div class="grid grid-4">
+        <div class="metric-card">
+          <div class="metric-title">Основной коммерческий фокус</div>
+          <div class="metric-value">5</div>
+          <p class="metric-caption">финтехи, биржи, кошельковые продукты, данные, выплаты</p>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">Смежный фокус</div>
+          <div class="metric-value">3</div>
+          <p class="metric-caption">платежные сервисы, B2B-платформы, клиенты с проверками</p>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">Стратегический фокус</div>
+          <div class="metric-value">3</div>
+          <p class="metric-caption">банки, институциональные клиенты, токенизация</p>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">Перенести в другие продукты</div>
+          <div class="metric-value">6</div>
+          <p class="metric-caption">checkout, web-кошелек, mobile wallet, AML-only, data-only, custody</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2" style="margin-top:16px">
+        <div class="chart-card">
+          <h3 class="chart-title">Распределение кейсов по сегментам</h3>
+          <p class="chart-desc">Сводка по открытым кейсам конкурентов из анализа</p>
+          <div id="caseSplit" class="plot short"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Приоритет сегментов</h3>
+          <p class="chart-desc">Оценка по коммерческому потенциалу и близости к текущему Crypto API</p>
+          <div id="priorityBubble" class="plot short"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="segments">
+      <div class="section-header">
+        <div>
+          <h2>Итоговая модель сегментов</h2>
+          <p>Сегменты сгруппированы по тому, какую роль Crypto API играет в продукте или операционном контуре клиента</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2" style="margin-bottom:16px">
+        <div class="chart-card">
+          <h3 class="chart-title">Сила сегментов по итоговой модели</h3>
+          <p class="chart-desc">Основные, смежные, стратегические и проверяемые направления</p>
+          <div id="segmentTreemap" class="plot"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Роль API в сегменте</h3>
+          <p class="chart-desc">Что именно покупает клиент: операции, данные, выплаты, проверки или управляемую инфраструктуру</p>
+          <div id="apiRoleBars" class="plot"></div>
+        </div>
+      </div>
+
+      <div class="grid grid-3">
+        <div class="segment-card">
+          <div class="segment-top"><div><div class="segment-name">Финтехи и цифровые сервисы</div><div class="segment-meta">Встраивание криптофункций в финансовый продукт</div></div><span class="badge primary">ICP-1</span></div>
+          <p>Клиенту нужны балансы, переводы, обмен, курсы, уведомления и проверки внутри уже работающего финансового продукта.</p>
+          <div class="kv"><div class="k">Сценарий</div><div class="v">Криптофункции внутри финтеха</div><div class="k">Функции</div><div class="v">Адреса, балансы, история, обмен, курсы, проверки</div><div class="k">Роли</div><div class="v">Продукт, CTO, безопасность, compliance</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div><div class="segment-name">Биржи, обменники и брокеры</div><div class="segment-meta">Операционный слой для торговли и движения активов</div></div><span class="badge primary">ICP-2</span></div>
+          <p>Нужны пополнения, выводы, обмен, статусы операций, надежные данные, контроль рисков и высокая доступность.</p>
+          <div class="kv"><div class="k">Сценарий</div><div class="v">Пополнение, вывод, обмен, данные</div><div class="k">Функции</div><div class="v">Транзакции, webhooks, история, AML, мониторинг</div><div class="k">Роли</div><div class="v">CTO, trading product, риск, операции</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div><div class="segment-name">Кошельковые и портфельные продукты</div><div class="segment-meta">Данные блокчейна, история и события</div></div><span class="badge primary">ICP-3</span></div>
+          <p>Потребность не только в платежах, а в надежном слое данных: балансы, история, активы, события, поддержка сетей.</p>
+          <div class="kv"><div class="k">Сценарий</div><div class="v">Данные для кошелька или портфеля</div><div class="k">Функции</div><div class="v">Balances, history, portfolio, rates, streams</div><div class="k">Роли</div><div class="v">Продукт, data lead, backend</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div><div class="segment-name">Платформы выплат и переводов</div><div class="segment-meta">Массовые выплаты и международные переводы</div></div><span class="badge primary">ICP-4</span></div>
+          <p>Сильный сегмент, если продукт закрывает статусы, лимиты, проверки, отчеты, сверку и сценарии выплат.</p>
+          <div class="kv"><div class="k">Сценарий</div><div class="v">Выплаты подрядчикам, продавцам, получателям переводов</div><div class="k">Функции</div><div class="v">Payouts, rates, AML, reports, notifications</div><div class="k">Роли</div><div class="v">Head of Payments, finance, operations</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div><div class="segment-name">Платежные и расчетные сервисы</div><div class="segment-meta">Сильный, но смежный контур</div></div><span class="badge medium">Смежный</span></div>
+          <p>Сегмент подтвержден, но если клиенту нужен checkout, возвраты и платежный кабинет, это ближе к криптопроцессингу.</p>
+          <div class="kv"><div class="k">Сценарий</div><div class="v">Расчеты, settlement, прием оплаты</div><div class="k">Функции</div><div class="v">Payments, statuses, reconciliation, on/off-ramp</div><div class="k">Роли</div><div class="v">Payments lead, CTO, finance</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div><div class="segment-name">B2B-платформы и SaaS</div><div class="segment-meta">Криптомодуль внутри платформы клиента</div></div><span class="badge medium">Смежный</span></div>
+          <p>Crypto API может стать встроенным модулем для клиентов платформы, но часто требуется больше настройки и поддержки.</p>
+          <div class="kv"><div class="k">Сценарий</div><div class="v">Встроенная криптоинфраструктура</div><div class="k">Функции</div><div class="v">Partner settings, API, webhooks, roles, reports</div><div class="k">Роли</div><div class="v">Product, CTO, partnerships</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div><div class="segment-name">Банки и регулируемые организации</div><div class="segment-meta">Стратегический enterprise-сегмент</div></div><span class="badge medium">Стратегия</span></div>
+          <p>Потенциал высокий, но нужны безопасность, аудит, роли, юридическая модель, размещение и отдельная упаковка.</p>
+          <div class="kv"><div class="k">Сценарий</div><div class="v">Контролируемые цифровые активы</div><div class="k">Функции</div><div class="v">Vault, keys, audit, self-hosted, compliance</div><div class="k">Роли</div><div class="v">Legal, risk, security, CTO</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div><div class="segment-name">Компании с проверками рисков</div><div class="segment-meta">AML как обязательный слой</div></div><span class="badge medium">Слой</span></div>
+          <p>Проверки адресов и транзакций важны для зрелых клиентов, но AML-only не всегда тянет покупку всего Crypto API.</p>
+          <div class="kv"><div class="k">Сценарий</div><div class="v">Проверки, мониторинг, аудит решений</div><div class="k">Функции</div><div class="v">AML, Travel Rule, reports, audit, alerts</div><div class="k">Роли</div><div class="v">Compliance, risk, operations</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div><div class="segment-name">Web3, игры, AI и редкие ниши</div><div class="segment-meta">Проверяемые модули</div></div><span class="badge check">Проверка</span></div>
+          <p>Могут быть полезны для продуктовой карты: награды, DePIN, токенизация, AI-платежи, билеты, пожертвования.</p>
+          <div class="kv"><div class="k">Сценарий</div><div class="v">Отдельные модули и пилоты</div><div class="k">Функции</div><div class="v">Rewards, token ops, server wallets, webhooks</div><div class="k">Роли</div><div class="v">Founder, CTO, product, operations</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="contours">
+      <div class="section-header">
+        <div>
+          <h2>Продуктовые контуры</h2>
+          <p>Главная задача итоговой модели - отделить Core Crypto API от криптопроцессинга, готового кошелька, AML-only, Data API и enterprise-инфраструктуры</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Матрица API vs готовый продукт</h3>
+          <p class="chart-desc">Чем правее - тем сильнее нужен API-слой; чем выше - тем больше операций с активами и деньгами</p>
+          <div id="contourMatrix" class="plot"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Распределение по продуктовым контурам</h3>
+          <p class="chart-desc">Условное распределение найденного спроса после разделения продуктов</p>
+          <div id="productContours" class="plot"></div>
+        </div>
+      </div>
+
+      <table style="margin-top:16px">
+        <thead><tr><th>Контур</th><th>Роль в модели ЦА</th><th>Ключевые сегменты</th><th>Что важно</th></tr></thead>
+        <tbody>
+          <tr><td>Core Crypto API</td><td>Основной фокус</td><td>Финтехи, биржи, кошельковые продукты, портфельные сервисы, data-продукты</td><td>Адреса, балансы, история, транзакции, события, сети, проверки</td></tr>
+          <tr><td>Модуль выплат</td><td>Сильный дополнительный контур</td><td>Payroll, EOR, remittance, маркетплейсы, платформы выплат</td><td>Статусы, лимиты, проверки, отчеты, сверка, возвраты</td></tr>
+          <tr><td>Криптопроцессинг</td><td>Смежный продукт</td><td>PSP, e-commerce, продавцы, donation-сценарии</td><td>Checkout, расчет продавцу, платежная панель, возвраты</td></tr>
+          <tr><td>Кошелек с интерфейсом</td><td>Другой продуктовый контур</td><td>Финтехи, Web3-проекты, продавцы, сообщества</td><td>Видимый web- или mobile-кошелек с балансом и интерфейсом</td></tr>
+          <tr><td>AML-модуль</td><td>Обязательный слой / отдельный модуль</td><td>Биржи, банки, VASP, платежные сервисы, финтехи</td><td>Проверки, санкции, история решений, отчеты, аудит</td></tr>
+          <tr><td>Data API</td><td>Отдельная упаковка внутри Crypto API</td><td>Портфельные сервисы, кошельки, налоговые сервисы, аналитика</td><td>Балансы, история, цены, события, нормализация данных</td></tr>
+          <tr><td>Enterprise-инфраструктура</td><td>Стратегическое направление</td><td>Банки, регулируемые организации, крупные финансовые клиенты</td><td>Размещение, роли, аудит, безопасность, юридическая модель</td></tr>
+          <tr><td>Проверяемые модули</td><td>Продуктовая карта</td><td>AI-агенты, DePIN, токенизация, билеты, углеродные кредиты</td><td>Не первый фокус, но полезно отслеживать</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section" id="evidence">
+      <div class="section-header">
+        <div>
+          <h2>Кейсы и рыночные сигналы</h2>
+          <p>Сводка показывает, какие направления чаще всего подтверждаются кейсами конкурентов и открытыми источниками</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Кейсы по сценариям внедрения</h3>
+          <p class="chart-desc">Платежи, торговля, данные, выплаты и контроль рисков дают основной массив подтверждений</p>
+          <div id="caseScenarioPie" class="plot"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Группы рыночных сигналов</h3>
+          <p class="chart-desc">Открытые источники чаще всего усиливают платежи, API-инфраструктуру и compliance</p>
+          <div id="marketSignals" class="plot"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="pains">
+      <div class="section-header">
+        <div>
+          <h2>Карта B2B-болей</h2>
+          <p>Crypto API покупают не ради отдельной криптофункции, а ради надежного технического слоя, который можно согласовать, внедрить и эксплуатировать</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Боли по сегментам</h3>
+          <p class="chart-desc">Условная оценка выраженности барьеров в ключевых сегментах</p>
+          <div id="painHeatmap" class="plot tall"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Главные причины сложности покупки</h3>
+          <p class="chart-desc">Какие группы факторов сильнее всего влияют на внедрение Crypto API</p>
+          <div id="painReasons" class="plot tall"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="functions">
+      <div class="section-header">
+        <div>
+          <h2>Функции и упаковка</h2>
+          <p>Разным сегментам нужен разный набор функций: кому-то операции и данные, кому-то выплаты, кому-то проверки и корпоративный контроль</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Связь сегментов и продуктовых форматов</h3>
+          <p class="chart-desc">Какой формат решения лучше подходит каждому сегменту</p>
+          <div id="formatSankey" class="plot tall"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Запросы функционала</h3>
+          <p class="chart-desc">Условная значимость функций по результатам анализа</p>
+          <div id="featureBars" class="plot tall"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="geo">
+      <div class="section-header">
+        <div>
+          <h2>География спроса</h2>
+          <p>Карта показывает направление открытых сигналов, а не точный объем рынка</p>
+        </div>
+      </div>
+
+      <div class="note" style="margin-bottom:14px">
+        Региональная карта является качественной визуализацией по открытым источникам: stablecoin-платежи, финтехи, переводы, регулирование, торговые продукты и API-инфраструктура проявляются по-разному в разных регионах.
+      </div>
+
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Региональная релевантность</h3>
+          <p class="chart-desc">Качественная оценка регионов по числу и силе релевантных сигналов для Crypto API</p>
+          <div id="geoMap" class="plot tall"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Сценарии по регионам</h3>
+          <p class="chart-desc">Какие сценарии сильнее проявляются в разных географиях</p>
+          <div id="geoBars" class="plot tall"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="rare">
+      <div class="section-header">
+        <div>
+          <h2>Проверяемые и редкие сегменты</h2>
+          <p>Ниши полезны для продуктовой карты и пилотов, но не должны смешиваться с основным коммерческим фокусом</p>
+        </div>
+      </div>
+
+      <div class="note" style="margin-bottom:14px">
+        Коэффициенты на графиках подобраны для визуализации и не являются точными рыночными метриками. Ниши показывают, где продукт можно применять точечно через отдельный модуль.
+      </div>
+
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Ниши по зрелости и близости к Crypto API</h3>
+          <p class="chart-desc">Чем выше точка - тем сильнее связь с текущим продуктом; чем правее - тем понятнее спрос</p>
+          <div id="nicheQuadrant" class="plot"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Редкие сценарии применения</h3>
+          <p class="chart-desc">Дополнительные направления, которые лучше отслеживать как модули или R&D</p>
+          <div id="rareTreemap" class="plot"></div>
+        </div>
+      </div>
+
+      <table style="margin-top:16px">
+        <thead><tr><th>Группа ниш</th><th>Как трактовать</th><th>Действие</th></tr></thead>
+        <tbody>
+          <tr><td>Реалистичные дополнительные направления</td><td>Токенизация недвижимости, регулярные счета, крипто-учет, распределение токенов, билетные платформы</td><td>Проверять через пилоты и отдельные модули</td></tr>
+          <tr><td>Модульные сценарии</td><td>Пожертвования, NFT-кампании, NFT-билеты, гранты, выплаты по графику</td><td>Не продавать весь Crypto API, а выделять отдельный модуль</td></tr>
+          <tr><td>Стратегические, но сложные</td><td>DePIN, углеродные кредиты, климатические проекты, токенизация активов, AI-платежи</td><td>Держать в продуктовой карте, не ставить в первый фокус</td></tr>
+          <tr><td>Слабосвязанные</td><td>Цифровые дипломы, медицинские блокчейн-сети, прозрачность благотворительности</td><td>Не включать в основную модель ЦА</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section" id="conclusions">
+      <div class="section-header">
+        <div>
+          <h2>Итоговые выводы</h2>
+          <p>Краткая управленческая трактовка результатов анализа</p>
+        </div>
+      </div>
+
+      <div class="two-col-text">
+        <p><strong>1. Crypto API - это инфраструктурный продукт.</strong> Его основной фокус - компании, которым нужен технический слой для адресов, балансов, истории, транзакций, событий, курсов, проверок и работы с сетями.</p>
+        <p><strong>2. Самый сильный коммерческий фокус:</strong> финтехи, биржи, брокеры, кошельковые продукты, портфельные сервисы, data-продукты и платформы выплат.</p>
+        <p><strong>3. Платежные сервисы подтверждены, но требуют разделения.</strong> Если клиенту нужен checkout, возвраты, расчет продавцу и платежная панель - это ближе к криптопроцессингу.</p>
+        <p><strong>4. Выплаты и денежные переводы лучше выделять отдельно.</strong> У них свои задачи: массовость, география, статусы, лимиты, проверки, отчеты и сверка.</p>
+        <p><strong>5. AML и контроль рисков - обязательный слой.</strong> Для зрелых клиентов проверки адресов, транзакций, санкций, Travel Rule и аудит являются условием внедрения.</p>
+        <p><strong>6. Банки и регулируемые организации - стратегический сегмент.</strong> Потенциал высокий, но нужны отдельная enterprise-упаковка, безопасность, юридическая модель и длительное согласование.</p>
+        <p><strong>7. Готовый кошелек с интерфейсом не нужно смешивать с Crypto API.</strong> Если клиенту нужен видимый web- или mobile-кошелек, это ближе к продукту криптокошелька.</p>
+        <p><strong>8. Редкие ниши полезны для карты развития.</strong> DePIN, AI-платежи, токенизация, билеты и пожертвования стоит отслеживать, но не делать первым коммерческим фокусом.</p>
+      </div>
+    </section>
+
+    <div class="footer">Дэшборд собран по результатам анализа ЦА B2B Crypto API</div>
+  </main>
+
+<script>
+const config = {responsive: true, displayModeBar: false};
+const font = {family: 'Inter, Arial, sans-serif', color: '#111827'};
+const layoutBase = {
+  paper_bgcolor: 'white',
+  plot_bgcolor: 'white',
+  font,
+  margin: {l: 42, r: 24, t: 22, b: 48},
+  xaxis: {gridcolor: '#eef1f5', zerolinecolor: '#eef1f5'},
+  yaxis: {gridcolor: '#eef1f5', zerolinecolor: '#eef1f5'}
+};
+
+Plotly.newPlot('caseSplit', [{
+  type: 'pie',
+  hole: 0.62,
+  labels: ['Биржи и торговля', 'Платежи и расчеты', 'Кошельки и данные', 'Выплаты и переводы', 'Web3 и лояльность', 'Проверки рисков', 'Банки и токенизация', 'AI и ранние сценарии', 'B2B SaaS', 'Прочие'],
+  values: [19, 15, 13, 12, 12, 10, 9, 6, 5, 11],
+  textinfo: 'label+percent',
+  hovertemplate: '%{label}<br>%{value} кейсов<extra></extra>',
+  marker: {colors: ['#1f6feb', '#12b76a', '#7a5af8', '#f79009', '#98a2b3', '#344054', '#4e5ba6', '#f04438', '#667085', '#d0d5dd'], line: {color: 'white', width: 3}}
+}], {...layoutBase, margin: {l: 10, r: 10, t: 18, b: 18}, showlegend: false}, config);
+
+Plotly.newPlot('priorityBubble', [{
+  type: 'scatter', mode: 'markers+text',
+  x: [90, 88, 84, 82, 76, 70, 66, 58, 46, 34],
+  y: [92, 90, 86, 82, 74, 68, 62, 54, 42, 34],
+  text: ['Финтехи', 'Биржи /<br>брокеры', 'Кошельки<br>и данные', 'Выплаты', 'Платежные<br>сервисы', 'B2B<br>платформы', 'Банки', 'Проверки<br>рисков', 'Web3 /<br>игры', 'AI /<br>DePIN'],
+  textposition: 'top center',
+  marker: {size: [34, 34, 31, 30, 28, 25, 25, 22, 20, 18], color: ['#1f6feb','#1f6feb','#12b76a','#12b76a','#7a5af8','#7a5af8','#f79009','#f79009','#98a2b3','#98a2b3'], opacity: 0.86, line: {color: 'white', width: 2}},
+  hovertemplate: 'Коммерческий потенциал: %{x}<br>Близость к Crypto API: %{y}<extra></extra>'
+}], {...layoutBase,
+  xaxis: {title: 'Коммерческий потенциал', range: [0, 100], gridcolor: '#eef1f5'},
+  yaxis: {title: 'Близость к текущему продукту', range: [0, 100], gridcolor: '#eef1f5'},
+  shapes: [
+    {type:'line', x0:50, x1:50, y0:0, y1:100, line:{color:'#e8ebef', dash:'dot'}},
+    {type:'line', x0:0, x1:100, y0:50, y1:50, line:{color:'#e8ebef', dash:'dot'}}
+  ]
+}, config);
+
+Plotly.newPlot('segmentTreemap', [{
+  type:'treemap',
+  labels:['Все сегменты','Основной фокус','Финтехи','Биржи и брокеры','Кошельки и данные','Платформы выплат','Продукты на данных','Смежный фокус','Платежные сервисы','B2B-платформы','Компании с проверками','Стратегический фокус','Банки','Институциональные клиенты','Токенизация','Проверяемые','Web3 и игры','AI-агенты','DePIN','Редкие вертикали'],
+  parents:['','Все сегменты','Основной фокус','Основной фокус','Основной фокус','Основной фокус','Основной фокус','Все сегменты','Смежный фокус','Смежный фокус','Смежный фокус','Все сегменты','Стратегический фокус','Стратегический фокус','Стратегический фокус','Все сегменты','Проверяемые','Проверяемые','Проверяемые','Проверяемые'],
+  values:[0,0,26,25,22,21,18,0,18,14,12,0,14,12,10,0,9,7,6,5],
+  marker:{colors:['#ffffff','#eef5ff','#1f6feb','#1f6feb','#12b76a','#12b76a','#12b76a','#f4f3ff','#7a5af8','#7a5af8','#f79009','#fffaeb','#f79009','#f79009','#f79009','#f7f8fa','#98a2b3','#98a2b3','#98a2b3','#98a2b3']},
+  textinfo:'label+value',
+  hovertemplate:'%{label}<br>Условная сила: %{value}<extra></extra>'
+}], {...layoutBase, margin:{l:10,r:10,t:10,b:10}}, config);
+
+Plotly.newPlot('apiRoleBars', [{
+  type:'bar', orientation:'h',
+  y:['Встраивание криптоопераций','Пополнение / вывод / обмен','Данные и события блокчейна','Массовые выплаты','Расчеты в стейблкоинах','Проверки и аудит','Корпоративный контроль','Пилотные модули'],
+  x:[94,90,88,82,74,72,66,44],
+  marker:{color:['#1f6feb','#1f6feb','#12b76a','#12b76a','#7a5af8','#f79009','#f79009','#98a2b3']},
+  hovertemplate:'%{y}: %{x}<extra></extra>'
+}], {...layoutBase, margin:{l:205,r:24,t:20,b:36}, xaxis:{title:'Условная релевантность', range:[0,100], gridcolor:'#eef1f5'}, yaxis:{autorange:'reversed'}}, config);
+
+Plotly.newPlot('contourMatrix', [{
+  type: 'scatter', mode: 'markers+text',
+  x: [92, 88, 86, 78, 70, 62, 48, 38, 30, 24],
+  y: [86, 78, 70, 82, 58, 64, 78, 36, 54, 32],
+  text: ['Core<br>Crypto API', 'Data API', 'Модуль<br>выплат', 'Биржевой<br>контур', 'AML<br>слой', 'Enterprise<br>infra', 'Крипто-<br>процессинг', 'Web / mobile<br>кошелек', 'NFT /<br>donations', 'AI /<br>DePIN'],
+  textposition: 'middle center',
+  marker: {size: [44,40,38,38,34,34,32,30,26,24], color: ['#1f6feb','#12b76a','#12b76a','#1f6feb','#f79009','#f79009','#7a5af8','#98a2b3','#98a2b3','#98a2b3'], opacity: 0.18, line: {color: ['#1f6feb','#12b76a','#12b76a','#1f6feb','#f79009','#f79009','#7a5af8','#98a2b3','#98a2b3','#98a2b3'], width: 2}}
+}], {...layoutBase,
+  xaxis: {title: 'Потребность в API-слое', range: [0, 100], gridcolor: '#eef1f5'},
+  yaxis: {title: 'Операции с активами / деньгами', range: [0, 100], gridcolor: '#eef1f5'},
+  shapes: [
+    {type:'rect', x0:55, x1:100, y0:50, y1:100, fillcolor:'#eef5ff', opacity:0.45, line:{width:0}},
+    {type:'rect', x0:0, x1:55, y0:0, y1:100, fillcolor:'#f7f8fa', opacity:0.6, line:{width:0}}
+  ],
+  annotations: [
+    {x:78, y:98, text:'Основной API-фокус', showarrow:false, font:{color:'#1f6feb', size:12}},
+    {x:26, y:8, text:'Готовые продукты / отдельные модули', showarrow:false, font:{color:'#667085', size:12}}
+  ]
+}, config);
+
+Plotly.newPlot('productContours', [{
+  type:'bar', orientation:'h',
+  y:['Core Crypto API','Data API','Модуль выплат','Криптопроцессинг','AML-модуль','Кошелек с интерфейсом','Enterprise-инфраструктура','Проверяемые модули'],
+  x:[28,18,16,12,10,8,5,3],
+  marker:{color:['#1f6feb','#12b76a','#12b76a','#7a5af8','#f79009','#98a2b3','#f79009','#98a2b3']},
+  hovertemplate:'%{y}: %{x}%<extra></extra>'
+}], {...layoutBase, margin:{l:190,r:24,t:20,b:36}, xaxis:{title:'Условная доля спроса, %', gridcolor:'#eef1f5'}, yaxis:{autorange:'reversed'}}, config);
+
+Plotly.newPlot('caseScenarioPie', [{
+  type:'pie', hole:0.58,
+  labels:['Платежи и расчеты','Торговля и обмен','Кошельки / данные','Выплаты и переводы','Web3 / лояльность / игры','Проверки и риск','Банки и регулирование','Ранние сценарии'],
+  values:[27,19,13,12,12,10,9,10],
+  textinfo:'label+percent',
+  marker:{colors:['#1f6feb','#12b76a','#7a5af8','#f79009','#98a2b3','#344054','#4e5ba6','#d0d5dd'], line:{color:'white', width:3}},
+  hovertemplate:'%{label}<br>%{value}<extra></extra>'
+}], {...layoutBase, margin:{l:10,r:10,t:18,b:18}, showlegend:false}, config);
+
+Plotly.newPlot('marketSignals', [{
+  type:'bar', orientation:'h',
+  y:['Стейблкоины, платежи и расчеты','Кошельковая инфраструктура и API','Регулирование, AML и отчетность','Рынок и общая динамика','География и региональные сигналы','Биржи и торговая инфраструктура','Прием оплаты и e-commerce','AI-агенты и автоматизация'],
+  x:[18,16,15,8,7,6,3,2],
+  marker:{color:['#1f6feb','#12b76a','#f79009','#98a2b3','#7a5af8','#12b76a','#667085','#d0d5dd']},
+  hovertemplate:'%{y}: %{x} сигналов<extra></extra>'
+}], {...layoutBase, margin:{l:245,r:24,t:20,b:36}, xaxis:{title:'Количество сигналов', gridcolor:'#eef1f5'}, yaxis:{autorange:'reversed'}}, config);
+
+const segments = ['Финтехи','Биржи / брокеры','Кошельки / данные','Платформы выплат','Платежные сервисы','Банки','B2B-платформы','Web3 / ниши'];
+const pains = ['Доверие','Интеграция','Надежность API','События','Платежные статусы','Проверки','Безопасность','Стоимость','Поддержка'];
+const painZ = [
+  [8,9,8,8,6,8,9,7,7],
+  [9,9,10,9,7,10,10,8,8],
+  [7,8,9,9,4,6,7,9,7],
+  [8,8,9,9,10,9,8,7,8],
+  [9,8,9,10,10,9,9,8,8],
+  [10,9,9,8,8,10,10,7,9],
+  [8,9,8,8,7,7,8,8,8],
+  [6,7,7,7,5,5,6,7,6]
+];
+Plotly.newPlot('painHeatmap', [{
+  type:'heatmap', x:pains, y:segments, z:painZ,
+  colorscale:[[0,'#f7f8fa'],[0.5,'#d8e8ff'],[1,'#1f6feb']],
+  showscale:true, colorbar:{title:'Сила'},
+  hovertemplate:'%{y}<br>%{x}: %{z}/10<extra></extra>'
+}], {...layoutBase, margin:{l:145,r:20,t:20,b:110}, xaxis:{tickangle:-35}, yaxis:{autorange:'reversed'}}, config);
+
+Plotly.newPlot('painReasons', [{
+  type:'bar', orientation:'h',
+  y:['Надежность API и защита от повторов','Вебхуки, статусы и события','Безопасность ключей и доступов','Compliance, AML и Travel Rule','Запуск из теста в боевой контур','Сверка, отчеты и история','Стоимость, лимиты и масштабирование','Поддержка и SLA'],
+  x:[94,92,90,88,82,78,72,68],
+  text:[94,92,90,88,82,78,72,68],
+  textposition:'outside',
+  marker:{color:['#1f6feb','#1f6feb','#12b76a','#f79009','#7a5af8','#12b76a','#98a2b3','#98a2b3']},
+  hovertemplate:'%{y}: %{x}<extra></extra>'
+}], {...layoutBase, margin:{l:250,r:30,t:20,b:36}, xaxis:{title:'Условный индекс влияния', range:[0,100], gridcolor:'#eef1f5'}, yaxis:{autorange:'reversed'}}, config);
+
+Plotly.newPlot('formatSankey', [{
+  type:'sankey', arrangement:'snap',
+  node:{pad:18, thickness:16, line:{color:'#e8ebef',width:1}, label:['Финтехи','Биржи / брокеры','Кошельки / данные','Платформы выплат','Платежные сервисы','Банки','B2B-платформы','Web3 / ниши','Core API','Data API','Модуль выплат','Криптопроцессинг','Enterprise-пакет','AML-модуль','Пилотные модули'], color:['#eef5ff','#eef5ff','#eef5ff','#ecfdf3','#f4f3ff','#fffaeb','#f4f3ff','#f7f8fa','#1f6feb','#12b76a','#12b76a','#7a5af8','#f79009','#f79009','#98a2b3']},
+  link:{source:[0,1,2,3,4,5,6,7,1,5], target:[8,8,9,10,11,12,8,14,13,13], value:[9,9,8,8,6,6,5,4,5,5], color:['rgba(31,111,235,.18)','rgba(31,111,235,.18)','rgba(18,183,106,.18)','rgba(18,183,106,.18)','rgba(122,90,248,.18)','rgba(247,144,9,.18)','rgba(31,111,235,.18)','rgba(102,112,133,.18)','rgba(247,144,9,.18)','rgba(247,144,9,.18)']}
+}], {...layoutBase, margin:{l:10,r:10,t:10,b:10}}, config);
+
+Plotly.newPlot('featureBars', [{
+  type:'bar',
+  x:['Адреса и балансы','История операций','Транзакции','Вебхуки','Курсы','AML','Ключи и подпись','Выплаты','Отчеты','Лимиты','Панель партнера','Self-hosted'],
+  y:[10,10,9,9,8,8,8,7,7,7,6,5],
+  marker:{color:['#1f6feb','#1f6feb','#1f6feb','#12b76a','#12b76a','#f79009','#f79009','#7a5af8','#7a5af8','#98a2b3','#98a2b3','#667085']},
+  hovertemplate:'%{x}: %{y}/10<extra></extra>'
+}], {...layoutBase, margin:{l:42,r:20,t:20,b:120}, yaxis:{title:'Значимость', range:[0,10]}, xaxis:{tickangle:-35}}, config);
+
+Plotly.newPlot('geoMap', [{
+  type:'choropleth',
+  locationmode:'ISO-3',
+  locations:['USA','CAN','GBR','DEU','FRA','NLD','CHE','ESP','ITA','SGP','HKG','IND','PHL','IDN','BRA','ARG','COL','MEX','ARE','AUS','NOR','ZAF'],
+  z:[94,68,82,78,74,70,76,64,62,84,78,76,68,62,76,72,70,64,62,58,60,54],
+  text:['США','Канада','Великобритания','Германия','Франция','Нидерланды','Швейцария','Испания','Италия','Сингапур','Гонконг','Индия','Филиппины','Индонезия','Бразилия','Аргентина','Колумбия','Мексика','ОАЭ','Австралия','Норвегия','ЮАР'],
+  colorscale:[[0,'#f7f8fa'],[0.5,'#d8e8ff'],[1,'#1f6feb']],
+  marker:{line:{color:'#ffffff',width:0.6}},
+  colorbar:{title:'Релевантность'},
+  hovertemplate:'%{text}<br>Оценка: %{z}<extra></extra>'
+}], {...layoutBase, geo:{projection:{type:'natural earth'}, showframe:false, showcoastlines:false, bgcolor:'white'}, margin:{l:0,r:0,t:0,b:0}}, config);
+
+Plotly.newPlot('geoBars', [{
+  type:'bar', orientation:'h',
+  y:['США','Европа / UK','Азия / APAC','Латинская Америка','Развивающиеся рынки','Global crypto-native'],
+  x:[94,84,80,76,70,88],
+  marker:{color:['#1f6feb','#1f6feb','#12b76a','#f79009','#f79009','#7a5af8']},
+  text:['Финтех, брокеры, stablecoin infra','Регулирование, банки, финтех, compliance','Платежи, Web3, PSP, кошельки','Переводы, цифровые доллары, финтех','Выплаты, remittance, доступ к долларам','Биржи, кошельки, data API, Web3'],
+  hovertemplate:'%{y}<br>%{text}<extra></extra>'
+}], {...layoutBase, margin:{l:155,r:20,t:20,b:36}, xaxis:{range:[0,100], title:'Сила сигнала'}, yaxis:{autorange:'reversed'}}, config);
+
+Plotly.newPlot('nicheQuadrant', [{
+  type:'scatter', mode:'markers+text',
+  x:[62,58,56,54,50,46,42,38,32,24],
+  y:[72,68,66,62,58,55,50,46,40,30],
+  text:['Крипто-<br>учет', 'Регулярные<br>счета', 'Токенизация<br>недвижимости', 'Token<br>vesting', 'Билетные<br>платформы', 'Self-hosted<br>payments', 'DePIN<br>rewards', 'Carbon<br>credits', 'AI<br>payments', 'Дипломы /<br>healthcare'],
+  textposition:'top center',
+  marker:{size:[29,28,28,25,23,23,22,20,20,18], color:['#12b76a','#12b76a','#f79009','#7a5af8','#7a5af8','#7a5af8','#98a2b3','#98a2b3','#98a2b3','#d0d5dd'], opacity:.86, line:{color:'white',width:2}},
+  hovertemplate:'Понятность спроса: %{x}<br>Связь с Crypto API: %{y}<extra></extra>'
+}], {...layoutBase, xaxis:{title:'Понятность спроса', range:[0,100]}, yaxis:{title:'Связь с Crypto API', range:[0,100]}, shapes:[{type:'line',x0:50,x1:50,y0:0,y1:100,line:{color:'#e8ebef',dash:'dot'}},{type:'line',x0:0,x1:100,y0:50,y1:50,line:{color:'#e8ebef',dash:'dot'}}]}, config);
+
+Plotly.newPlot('rareTreemap', [{
+  type:'treemap',
+  labels:['Редкие сценарии','Реалистичные дополнительные','Токенизация недвижимости','Регулярные счета','Крипто-учет','Token vesting','Билетные платформы','Модульные','Пожертвования','NFT-кампании','Airdrop / grants','Стратегические','DePIN','Carbon credits','AI-платежи','Слабосвязанные','Дипломы','Healthcare'],
+  parents:['','Редкие сценарии','Реалистичные дополнительные','Реалистичные дополнительные','Реалистичные дополнительные','Реалистичные дополнительные','Реалистичные дополнительные','Редкие сценарии','Модульные','Модульные','Модульные','Редкие сценарии','Стратегические','Стратегические','Стратегические','Редкие сценарии','Слабосвязанные','Слабосвязанные'],
+  values:[0,0,16,15,14,13,11,0,9,7,7,0,8,7,6,0,3,2],
+  marker:{colors:['#ffffff','#ecfdf3','#12b76a','#12b76a','#12b76a','#7a5af8','#7a5af8','#f4f3ff','#7a5af8','#7a5af8','#7a5af8','#fffaeb','#f79009','#f79009','#f79009','#f7f8fa','#98a2b3','#98a2b3']},
+  textinfo:'label+value',
+  hovertemplate:'%{label}<br>Вес проверки: %{value}<extra></extra>'
+}], {...layoutBase, margin:{l:10,r:10,t:10,b:10}}, config);
+</script>
+</body>
+</html>
