@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Дэшборд анализа ЦА - Банковский бэк-офис</title>
+  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --surface: #ffffff;
+      --surface-soft: #f7f8fa;
+      --border: #e8ebef;
+      --text: #111827;
+      --muted: #667085;
+      --muted-2: #98a2b3;
+      --accent: #1f6feb;
+      --accent-soft: #eef5ff;
+      --green: #12b76a;
+      --amber: #f79009;
+      --red: #f04438;
+      --purple: #7a5af8;
+      --teal: #06aed4;
+      --shadow: 0 8px 28px rgba(16, 24, 40, 0.06);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.5;
+    }
+
+    .page {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 28px 28px 60px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 24px;
+      padding: 28px;
+      border: 1px solid var(--border);
+      border-radius: 26px;
+      box-shadow: var(--shadow);
+      background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+      margin-bottom: 22px;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+
+    h1 {
+      font-size: 34px;
+      line-height: 1.1;
+      margin-bottom: 12px;
+      letter-spacing: -0.04em;
+    }
+
+    h2 {
+      font-size: 22px;
+      margin-bottom: 10px;
+      letter-spacing: -0.02em;
+    }
+
+    h3 {
+      font-size: 16px;
+      margin-bottom: 8px;
+      letter-spacing: -0.01em;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      max-width: 910px;
+      margin-bottom: 0;
+      font-size: 15px;
+    }
+
+    .tagline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 10px;
+      background: var(--surface-soft);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 12px;
+      color: #344054;
+      white-space: nowrap;
+    }
+
+    .pill.accent { background: var(--accent-soft); color: #1d4ed8; border-color: #d8e8ff; }
+    .pill.green { background: #ecfdf3; color: #027a48; border-color: #d1fadf; }
+    .pill.amber { background: #fffaeb; color: #b54708; border-color: #fedf89; }
+    .pill.red { background: #fef3f2; color: #b42318; border-color: #fee4e2; }
+    .pill.purple { background: #f4f3ff; color: #5925dc; border-color: #e9d7fe; }
+
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+      max-width: 520px;
+    }
+
+    .nav a {
+      color: #344054;
+      text-decoration: none;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 12px;
+      background: #fff;
+    }
+
+    .section {
+      margin-top: 24px;
+      padding: 24px;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      background: #fff;
+      box-shadow: var(--shadow);
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .section-header p {
+      color: var(--muted);
+      margin-bottom: 0;
+      max-width: 900px;
+      font-size: 14px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .grid-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+
+    .metric-card {
+      padding: 18px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+
+    .metric-title {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .metric-value {
+      font-size: 32px;
+      font-weight: 750;
+      letter-spacing: -0.04em;
+      margin-bottom: 6px;
+    }
+
+    .metric-caption {
+      font-size: 12px;
+      color: var(--muted);
+      margin: 0;
+    }
+
+    .chart-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      overflow: hidden;
+      min-height: 380px;
+    }
+
+    .chart-title {
+      padding: 16px 18px 0;
+      margin-bottom: 0;
+      font-size: 15px;
+    }
+
+    .chart-desc {
+      padding: 4px 18px 0;
+      color: var(--muted);
+      font-size: 12px;
+      margin: 0;
+    }
+
+    .plot {
+      width: 100%;
+      height: 350px;
+    }
+
+    .plot.tall { height: 470px; }
+    .plot.short { height: 300px; }
+    .plot.mini { height: 240px; }
+
+    .note {
+      border: 1px solid #d8e8ff;
+      background: var(--accent-soft);
+      color: #184a90;
+      border-radius: 18px;
+      padding: 16px 18px;
+      font-size: 14px;
+    }
+
+    .segment-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      background: #fff;
+    }
+
+    .segment-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .segment-name {
+      font-size: 17px;
+      font-weight: 750;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+
+    .segment-meta {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 12px;
+    }
+
+    .segment-card p {
+      color: #344054;
+      font-size: 13px;
+      margin-bottom: 0;
+    }
+
+    .badge {
+      padding: 6px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 650;
+      white-space: nowrap;
+    }
+
+    .badge.primary { background: #ecfdf3; color: #027a48; }
+    .badge.medium { background: #eff4ff; color: #3538cd; }
+    .badge.check { background: #fffaeb; color: #b54708; }
+    .badge.api { background: #fef3f2; color: #b42318; }
+
+    .kv {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      gap: 8px 12px;
+      font-size: 12px;
+      margin-top: 10px;
+    }
+
+    .kv .k { color: var(--muted); }
+    .kv .v { color: #344054; }
+
+    .info-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .mini-card {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 16px;
+      background: #fff;
+    }
+
+    .mini-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      font-size: 19px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      flex: none;
+    }
+
+    .mini-card strong {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 3px;
+    }
+
+    .mini-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      font-size: 13px;
+    }
+
+    th, td {
+      text-align: left;
+      vertical-align: top;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background: var(--surface-soft);
+      font-size: 12px;
+      color: #344054;
+      font-weight: 700;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    td { color: #344054; }
+
+    .footer {
+      margin-top: 24px;
+      color: var(--muted-2);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    @media (max-width: 980px) {
+      .topbar { flex-direction: column; }
+      .nav { justify-content: flex-start; max-width: none; }
+      .grid-2, .grid-3, .grid-4, .grid-5, .info-strip { grid-template-columns: 1fr; }
+      .plot, .plot.tall { height: 360px; }
+      .section-header { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div>
+        <h1>Анализ ЦА банковского бэк-офиса</h1>
+        <p class="subtitle">B2B-админка для управления клиентами, счетами, платежами, проверками, ролями, тарифами, сверкой и отчетами</p>
+        <div class="tagline">
+          <span class="pill accent">Фокус - внутренняя админка</span>
+          <span class="pill">B2B</span>
+          <span class="pill green">Счета + платежи + проверки</span>
+          <span class="pill purple">White-label</span>
+          <span class="pill accent">4 основных ICP</span>
+          <span class="pill amber">5 модульных пакетов</span>
+          <span class="pill red">Не необанк и не лицензия</span>
+        </div>
+      </div>
+      <nav class="nav">
+        <a href="#summary">Обзор</a>
+        <a href="#segments">Сегменты</a>
+        <a href="#demand">Спрос</a>
+        <a href="#value">Функции</a>
+        <a href="#cases">Кейсы</a>
+        <a href="#pains">Боли</a>
+        <a href="#formats">Форматы</a>
+        <a href="#rare">Ниши</a>
+        <a href="#actions">Упаковка</a>
+      </nav>
+    </header>
+
+    <section class="section" id="summary">
+      <div class="section-header">
+        <div>
+          <h2>Краткий результат</h2>
+          <p>Спрос разделяется на основной ICP, модульные входы, стратегические ниши и направления вне фокуса</p>
+        </div>
+      </div>
+
+      <div class="grid grid-5">
+        <div class="metric-card">
+          <div class="metric-title">Основной ICP</div>
+          <div class="metric-value">4</div>
+          <p class="metric-caption">EMI / PI, финтехи, банки, BaaS</p>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">Модульные входы</div>
+          <div class="metric-value">5</div>
+          <p class="metric-caption">платежи, карты, комплаенс, бизнес-банкинг, кредиты</p>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">Стратегические ниши</div>
+          <div class="metric-value">3</div>
+          <p class="metric-caption">криптофиат, исламский банкинг, агентские сети</p>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">Ключевая ценность</div>
+          <div class="metric-value">Ops</div>
+          <p class="metric-caption">контроль операций и проверяемость действий</p>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">Вне фокуса</div>
+          <div class="metric-value">6</div>
+          <p class="metric-caption">необанк, лицензия, банк-партнер, KYC-only, cards-only, замена ядра</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2" style="margin-top:16px">
+        <div class="chart-card">
+          <h3 class="chart-title">Распределение найденного спроса</h3>
+          <p class="chart-desc">Что ближе к текущему продукту, а что лучше не смешивать с ЦА</p>
+          <div id="demandSplit" class="plot short"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Приоритет сегментов</h3>
+          <p class="chart-desc">Связь с продуктом и коммерческий потенциал</p>
+          <div id="priorityBubble" class="plot short"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="segments">
+      <div class="section-header">
+        <div>
+          <h2>Итоговая модель сегментов</h2>
+          <p>Маркетологу важно отделить покупателей полного операционного слоя от покупателей отдельных модулей</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2" style="margin-bottom:16px">
+        <div class="chart-card">
+          <h3 class="chart-title">Карта ЦА</h3>
+          <p class="chart-desc">Иерархия сегментов по итогам исследования</p>
+          <div id="segmentTree" class="plot"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Сила сегментов</h3>
+          <p class="chart-desc">Условная оценка по пригодности продукта и спросу</p>
+          <div id="segmentBars" class="plot"></div>
+        </div>
+      </div>
+
+      <div class="grid grid-3">
+        <div class="segment-card">
+          <div class="segment-top"><div><div class="segment-name">EMI / PI / PSP</div><div class="segment-meta">Электронные деньги, платежи и расчеты</div></div><span class="badge primary">Фокус 1</span></div>
+          <p>Самое сильное совпадение: счета, платежи, сверка, проверки, роли, тарифы и отчеты</p>
+          <div class="kv"><div class="k">Сценарий</div><div class="v">центр операций и платежей</div><div class="k">Нужно</div><div class="v">статусы, очереди, лимиты, журнал действий</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div><div class="segment-name">Финтехи</div><div class="segment-meta">Высокий объем ручных операций</div></div><span class="badge primary">Фокус 1</span></div>
+          <p>Нужна единая панель для роста без хаоса в платежах, проверках и поддержке</p>
+          <div class="kv"><div class="k">Сценарий</div><div class="v">масштабирование операций</div><div class="k">Нужно</div><div class="v">автоматизация, отчеты, роли, контроль</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div><div class="segment-name">Банки</div><div class="segment-meta">Банки среднего размера</div></div><span class="badge primary">Фокус 1</span></div>
+          <p>Модернизация операционного слоя без немедленной полной замены банковского ядра</p>
+          <div class="kv"><div class="k">Сценарий</div><div class="v">цифровая операционная панель</div><div class="k">Нужно</div><div class="v">счета, проводки, отчеты, аудит</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div><div class="segment-name">BaaS</div><div class="segment-meta">Встроенные финансы и партнеры</div></div><span class="badge medium">Фокус 2</span></div>
+          <p>Сложный, но сильный сегмент: партнеры, субклиенты, лимиты, тарифы, отчеты</p>
+          <div class="kv"><div class="k">Сценарий</div><div class="v">управление партнерами</div><div class="k">Нужно</div><div class="v">многоуровневые права и сегменты</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div><div class="segment-name">Платежные команды</div><div class="segment-meta">Платежи, возвраты и расследования</div></div><span class="badge check">Модульный</span></div>
+          <p>Покупают не всю платформу, а центр платежей, статусов, ошибок и сверки</p>
+          <div class="kv"><div class="k">Сценарий</div><div class="v">разбор платежных исключений</div><div class="k">Нужно</div><div class="v">очереди, возвраты, реестры, сверка</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div><div class="segment-name">Карточные программы</div><div class="segment-meta">Карты и эквайринг</div></div><span class="badge check">Модульный</span></div>
+          <p>Нужен контроль заявок, карт, лимитов, блокировок, спорных операций и отчетов</p>
+          <div class="kv"><div class="k">Сценарий</div><div class="v">операционный центр карт</div><div class="k">Нужно</div><div class="v">статусы, лимиты, блокировки, отчеты</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="demand">
+      <div class="section-header">
+        <div>
+          <h2>Что является ЦА, а что нет</h2>
+          <p>Главный фильтр - клиенту нужен управляемый операционный контур, а не один внешний модуль</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Платформа vs отдельный модуль</h3>
+          <p class="chart-desc">Чем выше и правее, тем ближе сегмент к текущему продукту</p>
+          <div id="platformMatrix" class="plot"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Что не смешивать с ЦА</h3>
+          <p class="chart-desc">Спрос есть, но это другие продукты или партнерские зоны</p>
+          <div id="notTarget" class="plot"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="value">
+      <div class="section-header">
+        <div>
+          <h2>Функциональная ценность</h2>
+          <p>Бэк-офис ценен не количеством экранов, а контролем денег, действий сотрудников и операционных исключений</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Блоки ценности продукта</h3>
+          <p class="chart-desc">Что формирует основу предложения</p>
+          <div id="valueTreemap" class="plot tall"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Функциональная готовность</h3>
+          <p class="chart-desc">Где продукт выглядит сильнее всего</p>
+          <div id="valueRadar" class="plot tall"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="cases">
+      <div class="section-header">
+        <div>
+          <h2>Кейсы и рыночные сигналы</h2>
+          <p>Рынок чаще покупает не интерфейс, а управляемый контур операций, платежей, проверок и отчетов</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Что реально покупают</h3>
+          <p class="chart-desc">По кейсам конкурентов и открытым сигналам</p>
+          <div id="purchaseTypes" class="plot tall"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Уровень близости кейсов</h3>
+          <p class="chart-desc">Сильнее всего учитывались кейсы с конкретным заказчиком</p>
+          <div id="caseCloseness" class="plot tall"></div>
+        </div>
+      </div>
+
+      <div class="info-strip">
+        <div class="mini-card"><div class="mini-icon">⚡</div><div><strong>Самый сильный вход</strong><span>платежи и статусы</span></div></div>
+        <div class="mini-card"><div class="mini-icon">✓</div><div><strong>Важный модуль</strong><span>сверка и ностро</span></div></div>
+        <div class="mini-card"><div class="mini-icon">🏦</div><div><strong>Стратегический сегмент</strong><span>банки среднего размера</span></div></div>
+        <div class="mini-card"><div class="mini-icon">🛡️</div><div><strong>Сложный сегмент</strong><span>BaaS и партнерские модели</span></div></div>
+      </div>
+    </section>
+
+    <section class="section" id="sources">
+      <div class="section-header">
+        <div>
+          <h2>Открытые источники</h2>
+          <p>Сигналы по банковскому ядру, устойчивости, платежам, комплаенсу, ISO 20022, DORA и BaaS-рискам</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Группы сигналов</h3>
+          <p class="chart-desc">Какие темы чаще подтверждали спрос</p>
+          <div id="sourceGroups" class="plot"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Рыночные выводы</h3>
+          <p class="chart-desc">Короткая карта ожиданий к бэк-офису</p>
+          <div id="marketTreemap" class="plot"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="pains">
+      <div class="section-header">
+        <div>
+          <h2>Карта B2B-болей</h2>
+          <p>Главная боль - не сделать красивую админку, а безопасно управлять финансовыми операциями каждый день</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Боли по сегментам</h3>
+          <p class="chart-desc">Оценка выраженности по основным группам клиентов</p>
+          <div id="painHeatmap" class="plot tall"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Боли по этапам покупки</h3>
+          <p class="chart-desc">Где покупателю сложнее всего принять решение</p>
+          <div id="painStages" class="plot tall"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="formats">
+      <div class="section-header">
+        <div>
+          <h2>Форматы решения и специальные пакеты</h2>
+          <p>Один продукт нужно упаковывать в несколько форматов под разные сегменты</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Сегмент → формат поставки</h3>
+          <p class="chart-desc">Какая упаковка ближе каждому сегменту</p>
+          <div id="formatSankey" class="plot tall"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Пакеты решения</h3>
+          <p class="chart-desc">Точки входа для продаж и презентации</p>
+          <div id="packageBars" class="plot tall"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="rare">
+      <div class="section-header">
+        <div>
+          <h2>Уникальные ниши</h2>
+          <p>Не заменяют основную ЦА, но дают отдельные гипотезы для упаковки и пилотов</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Ниши по пригодности</h3>
+          <p class="chart-desc">Сила сигнала и близость к текущему продукту</p>
+          <div id="nicheQuadrant" class="plot"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Уникальные сценарии</h3>
+          <p class="chart-desc">Что отслеживать отдельно от основной модели</p>
+          <div id="rareTreemap" class="plot"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="actions">
+      <div class="section-header">
+        <div>
+          <h2>Маркетинговая упаковка</h2>
+          <p>Что выносить в первый экран, презентацию и лид-квалификацию</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Приоритет сообщений</h3>
+          <p class="chart-desc">Что важнее показывать в коммуникации</p>
+          <div id="messagePriority" class="plot"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Лид-квалификация</h3>
+          <p class="chart-desc">Главный фильтр - есть ли операции и сотрудники</p>
+          <div id="leadFunnel" class="plot"></div>
+        </div>
+      </div>
+
+      <table style="margin-top:16px">
+        <thead><tr><th>Фокус</th><th>Сообщение</th><th>Кому показывать</th></tr></thead>
+        <tbody>
+          <tr><td>Операционный слой</td><td>Управление счетами, платежами, проверками и отчетами</td><td>EMI / PI / финтехи</td></tr>
+          <tr><td>Модульный вход</td><td>Платежи, сверка, комплаенс, карточные операции</td><td>банки и платежные команды</td></tr>
+          <tr><td>Гибкая модель</td><td>SaaS, self-host, исходники, роли и аудит</td><td>BaaS и регулируемые клиенты</td></tr>
+          <tr><td>Честный отсев</td><td>Не приложение, не лицензия, не банк-партнер</td><td>все лиды на квалификации</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <div class="footer">Дэшборд подготовлен по результатам кабинетного анализа ЦА банковского бэк-офиса</div>
+  </main>
+
+<script>
+const config = {responsive: true, displayModeBar: false};
+const font = {family: 'Inter, Arial, sans-serif', color: '#111827'};
+const layoutBase = {
+  paper_bgcolor: 'white',
+  plot_bgcolor: 'white',
+  font,
+  margin: {l: 42, r: 24, t: 22, b: 48},
+  xaxis: {gridcolor: '#eef1f5', zerolinecolor: '#eef1f5'},
+  yaxis: {gridcolor: '#eef1f5', zerolinecolor: '#eef1f5'}
+};
+
+Plotly.newPlot('demandSplit', [{
+  type: 'pie',
+  hole: 0.62,
+  labels: ['Полный бэк-офис', 'Модульный спрос', 'Стратегические ниши', 'Вне фокуса'],
+  values: [42, 28, 16, 14],
+  textinfo: 'label+percent',
+  hovertemplate: '%{label}<br>%{value}%<extra></extra>',
+  marker: {colors: ['#1f6feb', '#12b76a', '#f79009', '#f04438'], line: {color: 'white', width: 3}}
+}], {...layoutBase, margin: {l: 10, r: 10, t: 18, b: 18}, showlegend: false}, config);
+
+Plotly.newPlot('priorityBubble', [{
+  type: 'scatter', mode: 'markers+text',
+  x: [96, 88, 78, 67, 44, 24],
+  y: [92, 86, 80, 72, 58, 32],
+  text: ['EMI/PI/PSP', 'Финтехи', 'Банки', 'BaaS', 'Карточные<br>программы', 'Криптофиат'],
+  textposition: ['top center','top center','top center','top center','top center','top center'],
+  marker: {
+    size: [42, 38, 34, 32, 28, 24],
+    color: ['#1f6feb', '#1f6feb', '#1f6feb', '#1f6feb', '#12b76a', '#f79009'],
+    opacity: 0.86,
+    line: {color: 'white', width: 2}
+  },
+  hovertemplate: 'Потенциал: %{x}<br>Связь с продуктом: %{y}<extra></extra>'
+}], {...layoutBase,
+  xaxis: {title: 'Коммерческий потенциал', range: [0, 100], gridcolor: '#eef1f5'},
+  yaxis: {title: 'Связь с продуктом', range: [0, 100], gridcolor: '#eef1f5'},
+  shapes: [
+    {type:'line', x0:50, x1:50, y0:0, y1:100, line:{color:'#e8ebef', dash:'dot'}},
+    {type:'line', x0:0, x1:100, y0:50, y1:50, line:{color:'#e8ebef', dash:'dot'}}
+  ]
+}, config);
+
+Plotly.newPlot('segmentTree', [{
+  type:'treemap',
+  labels:[
+    'Все сегменты',
+    'Основной ICP','EMI / PI / PSP','Финтехи','Банки','BaaS',
+    'Модульный фокус','Платежные команды','Карточные программы','Бизнес-банкинг','Кредиты и депозиты','Комплаенс-панель',
+    'Проверяемые ниши','Криптофиат','Исламский банкинг','Агентские сети',
+    'Вне фокуса','Клиентское приложение','Лицензия','Банк-партнер','KYC-only','Cards-only','Замена ядра'
+  ],
+  parents:[
+    '',
+    'Все сегменты','Основной ICP','Основной ICP','Основной ICP','Основной ICP',
+    'Все сегменты','Модульный фокус','Модульный фокус','Модульный фокус','Модульный фокус','Модульный фокус',
+    'Все сегменты','Проверяемые ниши','Проверяемые ниши','Проверяемые ниши',
+    'Все сегменты','Вне фокуса','Вне фокуса','Вне фокуса','Вне фокуса','Вне фокуса','Вне фокуса'
+  ],
+  values:[0,0,20,18,16,15,0,13,11,10,9,9,0,8,7,6,0,6,6,5,5,5,5],
+  marker:{colors:[
+    '#ffffff',
+    '#eef5ff','#1f6feb','#1f6feb','#1f6feb','#1f6feb',
+    '#ecfdf3','#12b76a','#12b76a','#12b76a','#12b76a','#12b76a',
+    '#fffaeb','#f79009','#f79009','#f79009',
+    '#fef3f2','#f04438','#f04438','#f04438','#f04438','#f04438','#f04438'
+  ]},
+  textinfo:'label+value',
+  hovertemplate:'%{label}<br>Условная сила: %{value}<extra></extra>'
+}], {...layoutBase, margin:{l:10,r:10,t:10,b:10}}, config);
+
+Plotly.newPlot('segmentBars', [{
+  type:'bar', orientation:'h',
+  y:['EMI/PI/PSP','Финтехи','Банки','BaaS','Платежные команды','Карточные программы','Бизнес-банкинг','Кредиты / депозиты','Криптофиат','Исламский банкинг','Агентские сети'],
+  x:[96,92,84,82,80,74,72,66,64,52,46],
+  marker:{color:['#1f6feb','#1f6feb','#1f6feb','#1f6feb','#12b76a','#12b76a','#12b76a','#12b76a','#f79009','#f79009','#f79009']},
+  text:[96,92,84,82,80,74,72,66,64,52,46],
+  textposition:'outside',
+  hovertemplate:'%{y}: %{x}<extra></extra>'
+}], {...layoutBase, margin:{l:190,r:40,t:20,b:36}, xaxis:{title:'Рейтинг сегмента', range:[0,105], gridcolor:'#eef1f5'}, yaxis:{autorange:'reversed'}}, config);
+
+Plotly.newPlot('platformMatrix', [{
+  type: 'scatter', mode: 'markers+text',
+  x: [86, 78, 72, 63, 55, 30, 22, 20, 16, 92],
+  y: [88, 82, 78, 72, 58, 45, 35, 28, 24, 25],
+  text: ['EMI / PI', 'Банки', 'BaaS', 'Финтехи', 'Платежный<br>модуль', 'Standalone<br>KYC', 'Карточный<br>процессинг', 'Клиентское<br>приложение', 'Лицензия', 'Замена<br>ядра'],
+  textposition: 'top center',
+  marker: {
+    size: [34,32,32,30,28,26,26,26,26,28],
+    color: ['#1f6feb','#1f6feb','#1f6feb','#1f6feb','#12b76a','#f04438','#f79009','#f04438','#f04438','#f04438'],
+    opacity: 0.86,
+    line: {color: 'white', width: 2}
+  }
+}], {...layoutBase,
+  xaxis: {title: 'Нужен полный операционный слой', range: [0, 100], gridcolor: '#eef1f5'},
+  yaxis: {title: 'Нужна внутренняя панель', range: [0, 100], gridcolor: '#eef1f5'},
+  shapes: [
+    {type:'rect', x0:50, x1:100, y0:50, y1:100, fillcolor:'#eef5ff', opacity:0.45, line:{width:0}},
+    {type:'line', x0:50, x1:50, y0:0, y1:100, line:{color:'#e8ebef', dash:'dot'}},
+    {type:'line', x0:0, x1:100, y0:50, y1:50, line:{color:'#e8ebef', dash:'dot'}}
+  ],
+  annotations: [
+    {x:75, y:98, text:'ЦА бэк-офиса', showarrow:false, font:{color:'#1f6feb', size:12}},
+    {x:25, y:10, text:'Другие продукты', showarrow:false, font:{color:'#667085', size:12}}
+  ]
+}, config);
+
+Plotly.newPlot('notTarget', [{
+  type:'bar', orientation:'h',
+  y:['Клиентское приложение','Лицензия','Банк-партнер','Standalone KYC','Cards-only','Замена ядра'],
+  x:[92,88,84,78,72,70],
+  marker:{color:['#f04438','#f04438','#f04438','#f04438','#f04438','#f04438']},
+  text:[92,88,84,78,72,70],
+  textposition:'outside',
+  hovertemplate:'%{y}: %{x}<extra></extra>'
+}], {...layoutBase, margin:{l:170,r:40,t:20,b:36}, xaxis:{title:'Вероятность отсечения', range:[0,100], gridcolor:'#eef1f5'}, yaxis:{autorange:'reversed'}}, config);
+
+Plotly.newPlot('valueTreemap', [{
+  type:'treemap',
+  labels:['Блоки ценности','Счета и балансы','Платежи и переводы','Проверки клиентов','Транзакционный мониторинг','Роли и 4 глаза','Тарифы и комиссии','Сверка и ностро','Отчеты','Карты','Курсы и обмены','Продуктовый каталог','Кредиты и депозиты'],
+  parents:['','Блоки ценности','Блоки ценности','Блоки ценности','Блоки ценности','Блоки ценности','Блоки ценности','Блоки ценности','Блоки ценности','Блоки ценности','Блоки ценности','Блоки ценности','Блоки ценности'],
+  values:[0,14,16,12,10,10,9,9,8,6,4,4,5],
+  marker:{colors:['#ffffff','#1f6feb','#12b76a','#f79009','#7a5af8','#06aed4','#7a5af8','#12b76a','#f04438','#f79009','#98a2b3','#98a2b3','#f79009']},
+  textinfo:'label+value',
+  hovertemplate:'%{label}<br>Вес: %{value}<extra></extra>'
+}], {...layoutBase, margin:{l:10,r:10,t:10,b:10}}, config);
+
+Plotly.newPlot('valueRadar', [{
+  type:'scatterpolar', fill:'toself',
+  r:[9,9,8,8,8,8,7,7,6,5],
+  theta:['Счета','Платежи','Проверки','Аудит','Сверка','Роли','Отчеты','Тарифы','Карты','Продукты'],
+  name:'Ценность',
+  line:{color:'#1f6feb'}, fillcolor:'rgba(31,111,235,.16)'
+}], {...layoutBase, polar:{radialaxis:{visible:true, range:[0,10], gridcolor:'#eef1f5'}, angularaxis:{gridcolor:'#eef1f5'}}, margin:{l:50,r:50,t:45,b:45}, showlegend:false}, config);
+
+Plotly.newPlot('purchaseTypes', [{
+  type:'bar', orientation:'h',
+  y:['Платежные операции и статусы','Сверка и расследования','KYC / KYB / KYT процесс','Карточные операции','Тарифы и лимиты','Отчеты и аудит','Права и 4 глаза','Продуктовый каталог'],
+  x:[86,78,74,62,56,54,48,36],
+  marker:{color:['#1f6feb','#1f6feb','#12b76a','#12b76a','#7a5af8','#7a5af8','#f79009','#98a2b3']},
+  text:['86%','78%','74%','62%','56%','54%','48%','36%'],
+  textposition:'outside',
+  hovertemplate:'%{y}: %{x}%<extra></extra>'
+}], {...layoutBase, margin:{l:220,r:44,t:20,b:36}, xaxis:{title:'Доля сигналов', range:[0,100], gridcolor:'#eef1f5'}, yaxis:{autorange:'reversed'}}, config);
+
+Plotly.newPlot('caseCloseness', [{
+  type: 'pie', hole: 0.58,
+  labels: ['Прямые кейсы','Близкие кейсы','Рыночные сигналы','Смежные сигналы'],
+  values: [42, 30, 18, 10],
+  textinfo: 'label+percent',
+  marker: {colors: ['#1f6feb','#12b76a','#f79009','#f04438'], line: {color:'white', width:3}},
+  hovertemplate:'%{label}: %{value}%<extra></extra>'
+}], {...layoutBase, margin:{l:10,r:10,t:18,b:18}, showlegend:false}, config);
+
+Plotly.newPlot('sourceGroups', [{
+  type: 'pie', hole: 0.60,
+  labels: ['Банковские системы','Устойчивость и DORA','Платежи и ISO 20022','Комплаенс','BaaS-риски','Карты','Сверка','Криптофиат'],
+  values: [14, 12, 11, 10, 8, 7, 7, 5],
+  textinfo:'label+percent',
+  marker:{colors:['#1f6feb','#7a5af8','#12b76a','#f79009','#f04438','#06aed4','#12b76a','#98a2b3'], line:{color:'white',width:3}},
+  hovertemplate:'%{label}: %{value}<extra></extra>'
+}], {...layoutBase, margin:{l:10,r:10,t:18,b:18}, showlegend:false}, config);
+
+Plotly.newPlot('marketTreemap', [{
+  type:'treemap',
+  labels:['Рынок ожидает','Счета','Платежи','Сверка','Проверки','Роли','Отчеты','Тарифы','Аудит','Устойчивость','Партнеры','Инциденты'],
+  parents:['','Рынок ожидает','Рынок ожидает','Рынок ожидает','Рынок ожидает','Рынок ожидает','Рынок ожидает','Рынок ожидает','Рынок ожидает','Рынок ожидает','Рынок ожидает','Рынок ожидает'],
+  values:[0,16,18,14,13,12,10,8,8,8,7,5],
+  marker:{colors:['#ffffff','#1f6feb','#12b76a','#12b76a','#f79009','#7a5af8','#7a5af8','#06aed4','#f79009','#98a2b3','#98a2b3','#f04438']},
+  textinfo:'label+value',
+  hovertemplate:'%{label}<br>Вес сигнала: %{value}<extra></extra>'
+}], {...layoutBase, margin:{l:10,r:10,t:10,b:10}}, config);
+
+const painSegments = ['EMI / PI','Финтехи','Банки','BaaS','Карточные программы','Криптофиат'];
+const painGroups = ['Платежи','Сверка','Проверки','Роли','Отчеты','Тарифы','Лимиты','Устойчивость'];
+const painZ = [
+  [10,9,9,8,8,8,8,8],
+  [9,8,8,8,7,7,8,7],
+  [8,8,9,9,9,7,7,9],
+  [9,8,9,10,9,9,8,8],
+  [8,7,7,8,7,8,9,7],
+  [9,8,10,8,8,7,8,8]
+];
+Plotly.newPlot('painHeatmap', [{
+  type:'heatmap', x:painGroups, y:painSegments, z:painZ,
+  colorscale:[[0,'#f7f8fa'],[0.45,'#fedf89'],[0.7,'#f79009'],[1,'#f04438']],
+  showscale:true, colorbar:{title:'Сила'},
+  hovertemplate:'%{y}<br>%{x}: %{z}/10<extra></extra>'
+}], {...layoutBase, margin:{l:150,r:20,t:20,b:90}, xaxis:{tickangle:-35}, yaxis:{autorange:'reversed'}}, config);
+
+Plotly.newPlot('painStages', [
+  {type:'bar', orientation:'h', name:'Платежи', y:['Квалификация','RFP','Интеграция','Аудит','Запуск','Эксплуатация'], x:[24,18,22,16,20,26], marker:{color:'#1f6feb'}},
+  {type:'bar', orientation:'h', name:'Проверки', y:['Квалификация','RFP','Интеграция','Аудит','Запуск','Эксплуатация'], x:[14,18,16,20,14,14], marker:{color:'#12b76a'}},
+  {type:'bar', orientation:'h', name:'Сверка', y:['Квалификация','RFP','Интеграция','Аудит','Запуск','Эксплуатация'], x:[10,12,16,14,18,20], marker:{color:'#f79009'}},
+  {type:'bar', orientation:'h', name:'Роли и доступы', y:['Квалификация','RFP','Интеграция','Аудит','Запуск','Эксплуатация'], x:[8,12,10,14,10,12], marker:{color:'#7a5af8'}},
+  {type:'bar', orientation:'h', name:'Отчеты', y:['Квалификация','RFP','Интеграция','Аудит','Запуск','Эксплуатация'], x:[10,12,8,14,8,10], marker:{color:'#06aed4'}},
+  {type:'bar', orientation:'h', name:'Тарифы / лимиты', y:['Квалификация','RFP','Интеграция','Аудит','Запуск','Эксплуатация'], x:[8,8,10,6,10,8], marker:{color:'#f04438'}},
+  {type:'bar', orientation:'h', name:'Устойчивость', y:['Квалификация','RFP','Интеграция','Аудит','Запуск','Эксплуатация'], x:[8,10,8,10,8,6], marker:{color:'#98a2b3'}}
+], {...layoutBase, barmode:'stack', margin:{l:140,r:24,t:20,b:48}, xaxis:{title:'Доля боли', range:[0,100], ticksuffix:'%'}, yaxis:{autorange:'reversed'}, legend:{orientation:'v', x:1.02, y:1}}, config);
+
+Plotly.newPlot('formatSankey', [{
+  type:'sankey', arrangement:'snap',
+  node:{
+    pad:18, thickness:16,
+    line:{color:'#e8ebef',width:1},
+    label:['EMI/PI/PSP','Финтехи','Банки','BaaS','Карточные программы','Криптофиат','Исламский банкинг','White-label SaaS','Self-host','Исходники фронта','Полные исходники'],
+    color:['#eef5ff','#eef5ff','#eef5ff','#eef5ff','#ecfdf3','#fffaeb','#fffaeb','#1f6feb','#12b76a','#f79009','#7a5af8']
+  },
+  link:{
+    source:[0,1,2,3,4,5,6,2,3,5,6],
+    target:[7,7,8,8,7,8,8,10,10,10,10],
+    value:[9,8,7,8,6,5,4,4,5,4,3],
+    color:['rgba(31,111,235,.18)','rgba(31,111,235,.18)','rgba(18,183,106,.18)','rgba(18,183,106,.18)','rgba(31,111,235,.12)','rgba(18,183,106,.12)','rgba(18,183,106,.12)','rgba(122,90,248,.18)','rgba(122,90,248,.18)','rgba(122,90,248,.18)','rgba(122,90,248,.18)']
+  }
+}], {...layoutBase, margin:{l:10,r:10,t:10,b:10}}, config);
+
+Plotly.newPlot('packageBars', [{
+  type:'bar', orientation:'h',
+  y:['Платежный операционный центр','Комплаенс-панель','Карточный операционный центр','Сверка и ностро','Продуктовая фабрика','Корпоративный бэк-офис','Криптофиатный контур','Исламский пакет'],
+  x:[92,84,78,72,66,60,52,48],
+  marker:{color:'#7a5af8'},
+  text:[92,84,78,72,66,60,52,48],
+  textposition:'outside',
+  hovertemplate:'%{y}: %{x}<extra></extra>'
+}], {...layoutBase, margin:{l:240,r:40,t:20,b:36}, xaxis:{title:'Приоритет', range:[0,100]}, yaxis:{autorange:'reversed'}}, config);
+
+Plotly.newPlot('nicheQuadrant', [{
+  type:'scatter', mode:'markers+text',
+  x:[86,78,70,64,58,52],
+  y:[82,76,66,62,54,48],
+  text:['Платежные<br>исключения','Сверка<br>и ностро','Комплаенс-<br>панель','Карточный<br>центр','Криптофиат','Исламский<br>пакет'],
+  textposition:'top center',
+  marker:{size:[34,32,28,26,24,22], color:['#1f6feb','#12b76a','#12b76a','#7a5af8','#f79009','#f79009'], opacity:.86, line:{color:'white',width:2}},
+  hovertemplate:'Сила сигнала: %{x}<br>Близость к продукту: %{y}<extra></extra>'
+}], {...layoutBase, xaxis:{title:'Сила сигнала', range:[0,100]}, yaxis:{title:'Близость к продукту', range:[0,100]}, shapes:[{type:'line',x0:50,x1:50,y0:0,y1:100,line:{color:'#e8ebef',dash:'dot'}},{type:'line',x0:0,x1:100,y0:50,y1:50,line:{color:'#e8ebef',dash:'dot'}}]}, config);
+
+Plotly.newPlot('rareTreemap', [{
+  type:'treemap',
+  labels:['Уникальные сценарии','Платежные исключения','Ностро и сверка','Комплаенс-панель','Продуктовая фабрика','Криптофиатный стол','Исламский банкинг','Агентские сети','Офисные сети'],
+  parents:['','Уникальные сценарии','Уникальные сценарии','Уникальные сценарии','Уникальные сценарии','Уникальные сценарии','Уникальные сценарии','Уникальные сценарии','Уникальные сценарии'],
+  values:[0,26,22,18,14,12,10,8,6],
+  marker:{colors:['#ffffff','#1f6feb','#12b76a','#12b76a','#7a5af8','#f79009','#f79009','#98a2b3','#98a2b3']},
+  textinfo:'label+value',
+  hovertemplate:'%{label}<br>Вес проверки: %{value}<extra></extra>'
+}], {...layoutBase, margin:{l:10,r:10,t:10,b:10}}, config);
+
+Plotly.newPlot('messagePriority', [{
+  type:'bar', orientation:'h',
+  y:['Операционный контроль','Платежи и исключения','Роли и аудит','KYC / KYB / KYT как процесс','Сверка и отчетность','Гибкие тарифы и лимиты','Модульные пакеты','Self-host / исходники'],
+  x:[92,86,78,72,64,58,50,44],
+  marker:{color:['#1f6feb','#1f6feb','#12b76a','#12b76a','#7a5af8','#7a5af8','#f79009','#98a2b3']},
+  text:['92%','86%','78%','72%','64%','58%','50%','44%'],
+  textposition:'outside',
+  hovertemplate:'%{y}: %{x}<extra></extra>'
+}], {...layoutBase, margin:{l:240,r:50,t:20,b:36}, xaxis:{title:'Приоритет', range:[0,100], gridcolor:'#eef1f5'}, yaxis:{autorange:'reversed'}}, config);
+
+Plotly.newPlot('leadFunnel', [{
+  type:'funnel',
+  y:['Есть финансовые операции','Есть операционная команда','Есть ручные процессы','Нужна единая панель','Нужен полный бэк-офис'],
+  x:[100,75,50,30,15],
+  textinfo:'value+percent initial',
+  marker:{color:['#1f6feb','#1f6feb','#12b76a','#f79009','#7a5af8']},
+  hovertemplate:'%{y}: %{x}<extra></extra>'
+}], {...layoutBase, margin:{l:190,r:30,t:20,b:36}}, config);
+</script>
+</body>
+</html>
