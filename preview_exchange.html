@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Дэшборд анализа ЦА - вайтлейбл криптообменник</title>
+  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --surface: #ffffff;
+      --surface-soft: #f7f8fa;
+      --border: #e8ebef;
+      --text: #111827;
+      --muted: #667085;
+      --muted-2: #98a2b3;
+      --accent: #1f6feb;
+      --accent-soft: #eef5ff;
+      --green: #12b76a;
+      --amber: #f79009;
+      --red: #f04438;
+      --purple: #7a5af8;
+      --shadow: 0 8px 28px rgba(16, 24, 40, 0.06);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.5;
+    }
+
+    .page {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 28px 28px 60px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 24px;
+      padding: 28px;
+      border: 1px solid var(--border);
+      border-radius: 26px;
+      box-shadow: var(--shadow);
+      background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+      margin-bottom: 22px;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+
+    h1 {
+      font-size: 34px;
+      line-height: 1.1;
+      margin-bottom: 12px;
+      letter-spacing: -0.04em;
+    }
+
+    h2 {
+      font-size: 22px;
+      margin-bottom: 10px;
+      letter-spacing: -0.02em;
+    }
+
+    h3 {
+      font-size: 16px;
+      margin-bottom: 8px;
+      letter-spacing: -0.01em;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      max-width: 900px;
+      margin-bottom: 0;
+      font-size: 15px;
+    }
+
+    .tagline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 10px;
+      background: var(--surface-soft);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 12px;
+      color: #344054;
+      white-space: nowrap;
+    }
+
+    .pill.accent { background: var(--accent-soft); color: #1d4ed8; border-color: #d8e8ff; }
+    .pill.green { background: #ecfdf3; color: #027a48; border-color: #d1fadf; }
+    .pill.amber { background: #fffaeb; color: #b54708; border-color: #fedf89; }
+
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+      max-width: 460px;
+    }
+
+    .nav a {
+      color: #344054;
+      text-decoration: none;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 12px;
+      background: #fff;
+    }
+
+    .section {
+      margin-top: 24px;
+      padding: 24px;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      background: #fff;
+      box-shadow: var(--shadow);
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .section-header p {
+      color: var(--muted);
+      margin-bottom: 0;
+      max-width: 860px;
+      font-size: 14px;
+    }
+
+    .grid { display: grid; gap: 16px; }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    .chart-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      overflow: hidden;
+      min-height: 380px;
+    }
+
+    .chart-card.compact { min-height: 230px; }
+
+    .chart-title {
+      padding: 16px 18px 0;
+      margin-bottom: 0;
+      font-size: 15px;
+    }
+
+    .chart-desc {
+      padding: 4px 18px 0;
+      color: var(--muted);
+      font-size: 12px;
+      margin: 0;
+    }
+
+    .plot { width: 100%; height: 350px; }
+    .plot.tall { height: 470px; }
+    .plot.short { height: 230px; }
+    .plot.mid { height: 380px; }
+
+
+    .segment-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      background: #fff;
+      min-height: 245px;
+    }
+
+    .segment-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .segment-name {
+      font-size: 17px;
+      font-weight: 750;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+
+    .segment-meta {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 0;
+    }
+
+    .segment-card p {
+      color: #344054;
+      font-size: 13px;
+      margin: 0 0 12px;
+    }
+
+    .badge {
+      padding: 6px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 650;
+      white-space: nowrap;
+    }
+
+    .badge.primary { background: #ecfdf3; color: #027a48; }
+    .badge.medium { background: #eff4ff; color: #3538cd; }
+    .badge.check { background: #fffaeb; color: #b54708; }
+
+    .kv {
+      display: grid;
+      grid-template-columns: 92px 1fr;
+      gap: 7px 10px;
+      font-size: 12px;
+      margin-top: 10px;
+    }
+
+    .kv .k { color: var(--muted); }
+    .kv .v { color: #344054; }
+
+    .mini-meter {
+      width: 100%;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--surface-soft);
+      overflow: hidden;
+      margin: 10px 0 12px;
+    }
+
+    .mini-meter span {
+      display: block;
+      height: 100%;
+      border-radius: 999px;
+      background: var(--accent);
+    }
+
+    .mini-meter.green span { background: var(--green); }
+    .mini-meter.purple span { background: var(--purple); }
+    .mini-meter.amber span { background: var(--amber); }
+
+    .footer {
+      margin-top: 24px;
+      color: var(--muted-2);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    @media (max-width: 980px) {
+      .topbar { flex-direction: column; }
+      .nav { justify-content: flex-start; max-width: none; }
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+      .plot, .plot.tall { height: 360px; }
+      .section-header { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div>
+        <h1>Анализ ЦА криптообменника</h1>
+        <p class="subtitle">Дэшборд по итоговой модели B2B-сегментов для вайтлейбл криптообменника</p>
+        <div class="tagline">
+          <span class="pill accent">Фокус - внешний обменный путь</span>
+          <span class="pill">B2B</span>
+          <span class="pill">Вайтлейбл</span>
+          <span class="pill">No-registration</span>
+          <span class="pill green">3 основных ICP</span>
+          <span class="pill amber">2 смежных слоя</span>
+        </div>
+      </div>
+      <nav class="nav">
+        <a href="#overview">Обзор</a>
+        <a href="#segments">Сегменты</a>
+        <a href="#fit">Соответствие</a>
+        <a href="#pains">Боли</a>
+        <a href="#formats">Форматы</a>
+        <a href="#sources">Сигналы</a>
+      </nav>
+    </header>
+
+    <section class="section" id="overview">
+      <div class="section-header">
+        <div>
+          <h2>Обзор модели</h2>
+          <p>Распределение спроса и приоритет сегментов</p>
+        </div>
+      </div>
+
+      <div class="grid grid-4" style="margin-bottom:16px">
+        <div class="chart-card compact"><h3 class="chart-title">Основной ICP</h3><div id="indIcp" class="plot short"></div></div>
+        <div class="chart-card compact"><h3 class="chart-title">Смежный фокус</h3><div id="indAdjacent" class="plot short"></div></div>
+        <div class="chart-card compact"><h3 class="chart-title">Проверяемый слой</h3><div id="indCheck" class="plot short"></div></div>
+        <div class="chart-card compact"><h3 class="chart-title">Вне фокуса</h3><div id="indOut" class="plot short"></div></div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Распределение найденного спроса</h3>
+          <p class="chart-desc">Что относится к обменнику, а что уходит в смежные продукты</p>
+          <div id="demandSplit" class="plot"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Приоритет сегментов</h3>
+          <p class="chart-desc">Коммерческий потенциал и соответствие продукту</p>
+          <div id="priorityBubble" class="plot"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="segments">
+      <div class="section-header">
+        <div>
+          <h2>Итоговая карта сегментов</h2>
+          <p>Основные, смежные и проверяемые группы</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Иерархия сегментов</h3>
+          <p class="chart-desc">Условная сила сегментов по итогам анализа</p>
+          <div id="segmentTreemap" class="plot tall"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Сила связи с вайтлейбл обменником</h3>
+          <p class="chart-desc">Чем выше значение, тем ближе сегмент к текущему продукту</p>
+          <div id="segmentFitBars" class="plot tall"></div>
+        </div>
+      </div>
+
+      <div class="grid grid-3" style="margin-top:16px">
+        <div class="segment-card">
+          <div class="segment-top">
+            <div><div class="segment-name">Региональные операторы</div><div class="segment-meta">Локальный обменник под брендом</div></div>
+            <span class="badge primary">ICP-1</span>
+          </div>
+          <div class="mini-meter"><span style="width:90%"></span></div>
+          <p>Клиенту нужен быстрый запуск локального обменника с языком, доменом, поддержкой и понятной зоной ответственности</p>
+          <div class="kv"><div class="k">Формат</div><div class="v">WL SaaS / self-host</div><div class="k">Функции</div><div class="v">Котировка, QR, история, статусы, 14 сетей</div><div class="k">Роли</div><div class="v">Основатель, операции, CTO, комплаенс</div></div>
+        </div>
+
+        <div class="segment-card">
+          <div class="segment-top">
+            <div><div class="segment-name">Обменные платформы</div><div class="segment-meta">Расширение exchange-контура</div></div>
+            <span class="badge primary">ICP-2</span>
+          </div>
+          <div class="mini-meter"><span style="width:94%"></span></div>
+          <p>Клиент уже работает с обменами и хочет расширить активы, курсы, поставщиков, виджет, API или новый frontend</p>
+          <div class="kv"><div class="k">Формат</div><div class="v">WL / API / self-host</div><div class="k">Функции</div><div class="v">Курсы, лимиты, статусы, история, отчеты</div><div class="k">Роли</div><div class="v">Основатель, продукт, CTO, поддержка</div></div>
+        </div>
+
+        <div class="segment-card">
+          <div class="segment-top">
+            <div><div class="segment-name">Крипто-трафик и медиа</div><div class="segment-meta">Монетизация аудитории</div></div>
+            <span class="badge primary">ICP-3</span>
+          </div>
+          <div class="mini-meter"><span style="width:84%"></span></div>
+          <p>Клиент хочет превратить аудиторию в обменные операции под своим брендом, а не отправлять ее на чужой сайт</p>
+          <div class="kv"><div class="k">Формат</div><div class="v">WL SaaS / домен клиента</div><div class="k">Функции</div><div class="v">Комиссия, отчеты, GA4, SEO, страницы пар</div><div class="k">Роли</div><div class="v">Основатель, рост, SEO, партнерства</div></div>
+        </div>
+
+        <div class="segment-card">
+          <div class="segment-top">
+            <div><div class="segment-name">Кошельки и портфели</div><div class="segment-meta">Встроенный обмен</div></div>
+            <span class="badge medium">Смежный</span>
+          </div>
+          <div class="mini-meter green"><span style="width:72%"></span></div>
+          <p>Спрос на обмен подтвержден кейсами, но таким клиентам чаще нужен API, виджет или embedded exchange внутри кошелька</p>
+          <div class="kv"><div class="k">Формат</div><div class="v">API / widget / embedded</div><div class="k">Функции</div><div class="v">Deep links, статусы, комиссии, отчеты</div><div class="k">Роли</div><div class="v">Продукт, CTO, партнерства</div></div>
+        </div>
+
+        <div class="segment-card">
+          <div class="segment-top">
+            <div><div class="segment-name">Token / TON / Telegram</div><div class="segment-meta">Страница входа в актив</div></div>
+            <span class="badge medium">Точечно</span>
+          </div>
+          <div class="mini-meter purple"><span style="width:66%"></span></div>
+          <p>Обменник нужен как страница токена, страница пары или мобильный путь для сообщества</p>
+          <div class="kv"><div class="k">Формат</div><div class="v">Страница пары / mini app</div><div class="k">Функции</div><div class="v">Social preview, TON / USDT, QR, языки</div><div class="k">Роли</div><div class="v">Founder, community, маркетинг</div></div>
+        </div>
+
+        <div class="segment-card">
+          <div class="segment-top">
+            <div><div class="segment-name">Малые команды</div><div class="segment-meta">MVP-обменник</div></div>
+            <span class="badge check">Проверка</span>
+          </div>
+          <div class="mini-meter amber"><span style="width:55%"></span></div>
+          <p>Команда хочет быстро проверить обменную нишу, но бюджет, поддержка и юридическая готовность нестабильны</p>
+          <div class="kv"><div class="k">Формат</div><div class="v">Легкий SaaS-пакет</div><div class="k">Функции</div><div class="v">Готовый UI, QR, история, языки</div><div class="k">Роли</div><div class="v">Основатель, партнер по трафику</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="fit">
+      <div class="section-header">
+        <div>
+          <h2>Соответствие продукту</h2>
+          <p>Отделение вайтлейбл обменника от API, виджета, полной биржи и платежного шлюза</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Матрица сценариев</h3>
+          <p class="chart-desc">Ось X - нужен ли внешний интерфейс, ось Y - нужна ли операционная зона обмена</p>
+          <div id="productFitMatrix" class="plot"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Продуктовые контуры</h3>
+          <p class="chart-desc">Куда распределяется найденный спрос</p>
+          <div id="productContours" class="plot"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="pains">
+      <div class="section-header">
+        <div>
+          <h2>Карта B2B-болей</h2>
+          <p>Боли покупки, внедрения и эксплуатации</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Боли по сегментам</h3>
+          <p class="chart-desc">Условная оценка выраженности боли по каждому сегменту</p>
+          <div id="painHeatmap" class="plot tall"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Ключевые барьеры сделки</h3>
+          <p class="chart-desc">Факторы, которые чаще всего влияют на покупку и запуск</p>
+          <div id="painReasons" class="plot tall"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="formats">
+      <div class="section-header">
+        <div>
+          <h2>Форматы решения</h2>
+          <p>Какой формат подходит разным сегментам</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Сегмент → формат поставки</h3>
+          <p class="chart-desc">Основные маршруты продуктовой упаковки</p>
+          <div id="formatSankey" class="plot tall"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Функциональный вес</h3>
+          <p class="chart-desc">Какие функции сильнее влияют на соответствие сегментам</p>
+          <div id="featureBars" class="plot tall"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="sources">
+      <div class="section-header">
+        <div>
+          <h2>Источник сигналов</h2>
+          <p>Какие типы источников повлияли на итоговую модель</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Типы источников</h3>
+          <p class="chart-desc">Рыночные, конкурентные, регуляторные и пользовательские сигналы</p>
+          <div id="sourceTypes" class="plot"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Сигналы по сегментам</h3>
+          <p class="chart-desc">Условная сила подтверждения по итогам анализа</p>
+          <div id="signalBars" class="plot"></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer">Дэшборд - графики и карточки сегментов</div>
+  </main>
+
+<script>
+const config = {responsive: true, displayModeBar: false};
+const font = {family: 'Inter, Arial, sans-serif', color: '#111827'};
+const layoutBase = {
+  paper_bgcolor: 'white',
+  plot_bgcolor: 'white',
+  font,
+  margin: {l: 42, r: 24, t: 22, b: 48},
+  xaxis: {gridcolor: '#eef1f5', zerolinecolor: '#eef1f5'},
+  yaxis: {gridcolor: '#eef1f5', zerolinecolor: '#eef1f5'}
+};
+
+function indicator(id, value, label, color) {
+  Plotly.newPlot(id, [{
+    type: 'indicator', mode: 'number', value: value,
+    number: {font: {size: 48, color: color}},
+    title: {text: label, font: {size: 12, color: '#667085'}}
+  }], {...layoutBase, margin: {l: 8, r: 8, t: 20, b: 8}}, config);
+}
+indicator('indIcp', 3, 'основных сегмента', '#1f6feb');
+indicator('indAdjacent', 2, 'средних слоя', '#12b76a');
+indicator('indCheck', 1, 'проверяемый сегмент', '#f79009');
+indicator('indOut', 6, 'направлений отсечения', '#98a2b3');
+
+Plotly.newPlot('demandSplit', [{
+  type: 'pie', hole: 0.62,
+  labels: ['Вайтлейбл обменник', 'Exchange API / embedded', 'Виджет / affiliate', 'Полная биржа', 'Фиат / платежи', 'DEX / bridge', 'AML-only'],
+  values: [32, 20, 14, 10, 11, 8, 5],
+  textinfo: 'label+percent',
+  hovertemplate: '%{label}<br>%{value}%<extra></extra>',
+  marker: {colors: ['#1f6feb', '#12b76a', '#f79009', '#98a2b3', '#667085', '#7a5af8', '#f04438'], line: {color: 'white', width: 3}}
+}], {...layoutBase, margin: {l: 10, r: 10, t: 18, b: 18}, showlegend: false}, config);
+
+Plotly.newPlot('priorityBubble', [{
+  type: 'scatter', mode: 'markers+text',
+  x: [92, 88, 82, 70, 62, 52, 34, 28, 22, 18],
+  y: [90, 94, 84, 72, 66, 55, 36, 30, 24, 18],
+  text: ['Обменные<br>платформы', 'Региональные<br>операторы', 'Крипто-трафик<br>и медиа', 'Кошельки', 'Token / TON<br>сообщества', 'Малые<br>команды', 'Полная<br>биржа', 'Фиат /<br>платежи', 'DEX /<br>bridge', 'AML-only'],
+  textposition: 'top center',
+  marker: {size: [34, 34, 31, 27, 24, 22, 18, 18, 18, 18], color: ['#1f6feb','#1f6feb','#1f6feb','#12b76a','#7a5af8','#f79009','#98a2b3','#98a2b3','#98a2b3','#98a2b3'], opacity: 0.86, line: {color: 'white', width: 2}},
+  hovertemplate: 'Коммерческий потенциал: %{x}<br>Соответствие продукту: %{y}<extra></extra>'
+}], {...layoutBase,
+  xaxis: {title: 'Коммерческий потенциал', range: [0, 100], gridcolor: '#eef1f5'},
+  yaxis: {title: 'Соответствие продукту', range: [0, 100], gridcolor: '#eef1f5'},
+  shapes: [
+    {type:'line', x0:50, x1:50, y0:0, y1:100, line:{color:'#e8ebef', dash:'dot'}},
+    {type:'line', x0:0, x1:100, y0:50, y1:50, line:{color:'#e8ebef', dash:'dot'}}
+  ]
+}, config);
+
+Plotly.newPlot('segmentTreemap', [{
+  type:'treemap',
+  labels:['Все сегменты','Основной ICP','Региональные операторы','Обменные платформы и агрегаторы','Крипто-трафик и медиа','Средний / смежный','Кошельки и портфельные сервисы','Token / TON / Telegram','Проверяемый','Малые команды с трафиком','Вне фокуса','Полная биржа','Платежи / фиат','DEX / bridge','AML-only'],
+  parents:['','Все сегменты','Основной ICP','Основной ICP','Основной ICP','Все сегменты','Средний / смежный','Средний / смежный','Все сегменты','Проверяемый','Все сегменты','Вне фокуса','Вне фокуса','Вне фокуса','Вне фокуса'],
+  values:[0,0,28,30,24,0,18,14,0,12,0,8,9,7,5],
+  marker:{colors:['#ffffff','#eef5ff','#1f6feb','#1f6feb','#1f6feb','#ecfdf3','#12b76a','#7a5af8','#fffaeb','#f79009','#f7f8fa','#98a2b3','#98a2b3','#98a2b3','#98a2b3']},
+  textinfo:'label+value',
+  hovertemplate:'%{label}<br>Условная сила: %{value}<extra></extra>'
+}], {...layoutBase, margin:{l:10,r:10,t:10,b:10}}, config);
+
+Plotly.newPlot('segmentFitBars', [{
+  type:'bar', orientation:'h',
+  y:['Обменные платформы и агрегаторы','Региональные операторы','Крипто-трафик и медиа','Кошельки и портфельные сервисы','Token / TON / Telegram','Малые команды с трафиком','Full exchange','Fiat / payments','DEX / bridge','AML-only'],
+  x:[94,90,84,72,66,55,36,30,24,18],
+  marker:{color:['#1f6feb','#1f6feb','#1f6feb','#12b76a','#7a5af8','#f79009','#98a2b3','#98a2b3','#98a2b3','#98a2b3']},
+  hovertemplate:'%{y}: %{x}<extra></extra>'
+}], {...layoutBase, margin:{l:230,r:24,t:20,b:36}, xaxis:{title:'Соответствие продукту', range:[0,100], gridcolor:'#eef1f5'}, yaxis:{autorange:'reversed'}}, config);
+
+Plotly.newPlot('productFitMatrix', [{
+  type: 'scatter', mode: 'markers+text',
+  x: [90, 86, 82, 60, 64, 52, 38, 24, 18, 15],
+  y: [88, 92, 80, 72, 64, 52, 70, 30, 22, 14],
+  text: ['Региональный<br>обменник','Обменная<br>платформа','Крипто-медиа','Кошелек<br>embedded','Token / TON<br>страница','Малый<br>MVP','Полная<br>биржа','Платежный<br>шлюз','DEX /<br>bridge','AML-only'],
+  textposition: 'middle center',
+  marker: {size: [42,42,38,35,32,30,28,26,26,24], color: ['#1f6feb','#1f6feb','#1f6feb','#12b76a','#7a5af8','#f79009','#98a2b3','#98a2b3','#98a2b3','#98a2b3'], opacity: 0.18, line: {color: ['#1f6feb','#1f6feb','#1f6feb','#12b76a','#7a5af8','#f79009','#98a2b3','#98a2b3','#98a2b3','#98a2b3'], width: 2}}
+}], {...layoutBase,
+  xaxis: {title: 'Нужен внешний интерфейс', range: [0, 100], gridcolor: '#eef1f5'},
+  yaxis: {title: 'Нужен обменный контур', range: [0, 100], gridcolor: '#eef1f5'},
+  shapes: [
+    {type:'rect', x0:50, x1:100, y0:50, y1:100, fillcolor:'#eef5ff', opacity:0.45, line:{width:0}},
+    {type:'rect', x0:0, x1:50, y0:0, y1:50, fillcolor:'#f7f8fa', opacity:0.7, line:{width:0}},
+    {type:'line', x0:50, x1:50, y0:0, y1:100, line:{color:'#e8ebef', dash:'dot'}},
+    {type:'line', x0:0, x1:100, y0:50, y1:50, line:{color:'#e8ebef', dash:'dot'}}
+  ],
+  annotations: [
+    {x:78, y:98, text:'Прямая зона WL-обменника', showarrow:false, font:{color:'#1f6feb', size:12}},
+    {x:26, y:8, text:'Другой продукт / отсечение', showarrow:false, font:{color:'#667085', size:12}}
+  ]
+}, config);
+
+Plotly.newPlot('productContours', [{
+  type:'bar', orientation:'h',
+  y:['Вайтлейбл обменник','Exchange API / embedded','Виджет / affiliate','Полная биржа','Криптопроцессинг','Fiat on-ramp','DEX / bridge','AML-only'],
+  x:[32,20,14,10,8,7,6,3],
+  marker:{color:['#1f6feb','#12b76a','#f79009','#98a2b3','#667085','#667085','#7a5af8','#f04438']},
+  hovertemplate:'%{y}: %{x}%<extra></extra>'
+}], {...layoutBase, margin:{l:190,r:24,t:20,b:36}, xaxis:{title:'Доля сигналов, %', gridcolor:'#eef1f5'}, yaxis:{autorange:'reversed'}}, config);
+
+const segments = ['Региональные операторы','Обменные платформы','Крипто-трафик / медиа','Кошельки','Token / TON','Малые команды'];
+const pains = ['Доверие','Курсы / резервы','Статусы','Поддержка','AML / право','Отчеты','Отличие от виджета','Тех. внедрение'];
+const painZ = [
+  [9,9,9,10,10,7,6,7],
+  [7,10,10,8,8,9,5,9],
+  [9,7,7,7,6,9,10,5],
+  [7,8,9,7,7,8,5,10],
+  [8,8,7,6,6,5,7,6],
+  [7,7,7,8,7,5,8,5]
+];
+Plotly.newPlot('painHeatmap', [{
+  type:'heatmap', x:pains, y:segments, z:painZ,
+  colorscale:[[0,'#f7f8fa'],[0.5,'#d8e8ff'],[1,'#1f6feb']],
+  showscale:true, colorbar:{title:'Сила'},
+  hovertemplate:'%{y}<br>%{x}: %{z}/10<extra></extra>'
+}], {...layoutBase, margin:{l:170,r:20,t:20,b:120}, xaxis:{tickangle:-35}, yaxis:{autorange:'reversed'}}, config);
+
+Plotly.newPlot('painReasons', [{
+  type:'bar', orientation:'h',
+  y:['Зависимость от API / резервов','Поддержка и возвраты','Юридическая роль и AML','Доверие к новому бренду','Отличие от виджета','Отчетность и комиссия','Размещение и исходники','Локализация и домены'],
+  x:[94,90,88,82,78,74,64,58],
+  text:[94,90,88,82,78,74,64,58],
+  textposition:'outside',
+  marker:{color:['#1f6feb','#1f6feb','#7a5af8','#12b76a','#f79009','#f79009','#98a2b3','#98a2b3']},
+  hovertemplate:'%{y}: %{x}<extra></extra>'
+}], {...layoutBase, margin:{l:220,r:34,t:20,b:36}, xaxis:{title:'Условный индекс влияния', range:[0,100], gridcolor:'#eef1f5'}, yaxis:{autorange:'reversed'}}, config);
+
+Plotly.newPlot('formatSankey', [{
+  type:'sankey', arrangement:'snap',
+  node:{pad:18, thickness:16, line:{color:'#e8ebef',width:1}, label:['Региональные операторы','Обменные платформы','Крипто-трафик / медиа','Кошельки','Token / TON','Малые команды','WL SaaS','Self-host','Exchange API','Виджет / embedded','Страница токена / пары','MVP-пакет'], color:['#eef5ff','#eef5ff','#eef5ff','#ecfdf3','#f4f3ff','#fffaeb','#1f6feb','#1f6feb','#12b76a','#12b76a','#7a5af8','#f79009']},
+  link:{source:[0,0,1,1,2,2,3,3,4,4,5], target:[6,7,7,8,6,9,8,9,10,9,11], value:[8,5,7,6,8,4,7,5,6,3,5], color:['rgba(31,111,235,.18)','rgba(31,111,235,.18)','rgba(31,111,235,.18)','rgba(18,183,106,.18)','rgba(31,111,235,.18)','rgba(18,183,106,.18)','rgba(18,183,106,.18)','rgba(18,183,106,.18)','rgba(122,90,248,.18)','rgba(18,183,106,.18)','rgba(247,144,9,.18)']}
+}], {...layoutBase, margin:{l:10,r:10,t:10,b:10}}, config);
+
+Plotly.newPlot('featureBars', [{
+  type:'bar',
+  x:['Котировка','Статусы','История','QR / копирование','14 сетей','Языки','Отчеты','Комиссия','Self-host','SEO / GA4','Legal / AML'],
+  y:[10,10,9,8,8,7,8,8,6,6,9],
+  marker:{color:['#1f6feb','#1f6feb','#1f6feb','#12b76a','#12b76a','#12b76a','#f79009','#f79009','#98a2b3','#98a2b3','#7a5af8']},
+  hovertemplate:'%{x}: %{y}/10<extra></extra>'
+}], {...layoutBase, margin:{l:42,r:20,t:20,b:120}, yaxis:{title:'Функциональный вес', range:[0,10]}, xaxis:{tickangle:-35}}, config);
+
+Plotly.newPlot('sourceTypes', [{
+  type: 'pie', hole: 0.55,
+  labels: ['API / widget конкуренты','Кейсы внедрения','Регулирование и AML','Отзывы и боли','Рынок и adoption','SEO / аналитика','Смежные продукты'],
+  values: [29, 18, 24, 14, 9, 10, 16],
+  textinfo: 'label+percent',
+  marker: {colors: ['#1f6feb','#12b76a','#7a5af8','#f79009','#98a2b3','#667085','#f04438'], line:{color:'white', width:3}},
+  hovertemplate:'%{label}<br>%{value}<extra></extra>'
+}], {...layoutBase, margin:{l:10,r:10,t:18,b:18}, showlegend:false}, config);
+
+Plotly.newPlot('signalBars', [{
+  type:'bar', orientation:'h',
+  y:['Обменные платформы','Региональные операторы','Крипто-трафик / медиа','Кошельки','Token / TON','Малые команды','Gaming / betting','Privacy / no-KYC','Агентства'],
+  x:[95,88,82,78,62,54,36,32,34],
+  marker:{color:['#1f6feb','#1f6feb','#1f6feb','#12b76a','#7a5af8','#f79009','#98a2b3','#98a2b3','#98a2b3']},
+  hovertemplate:'%{y}: %{x}<extra></extra>'
+}], {...layoutBase, margin:{l:190,r:24,t:20,b:36}, xaxis:{title:'Сила подтверждения', range:[0,100], gridcolor:'#eef1f5'}, yaxis:{autorange:'reversed'}}, config);
+</script>
+</body>
+</html>
