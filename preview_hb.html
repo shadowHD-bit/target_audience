@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Дэшборд результатов ЦА - Hedging Bot</title>
+  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --surface: #ffffff;
+      --surface-soft: #f7f8fa;
+      --border: #e8ebef;
+      --text: #111827;
+      --muted: #667085;
+      --muted-2: #98a2b3;
+      --accent: #1f6feb;
+      --accent-soft: #eef5ff;
+      --green: #12b76a;
+      --amber: #f79009;
+      --red: #f04438;
+      --purple: #7a5af8;
+      --shadow: 0 8px 28px rgba(16, 24, 40, 0.06);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.5;
+    }
+
+    .page {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 28px 28px 60px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 24px;
+      padding: 28px;
+      border: 1px solid var(--border);
+      border-radius: 26px;
+      box-shadow: var(--shadow);
+      background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+      margin-bottom: 22px;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+
+    h1 {
+      font-size: 34px;
+      line-height: 1.1;
+      margin-bottom: 12px;
+      letter-spacing: -0.04em;
+    }
+
+    h2 {
+      font-size: 22px;
+      margin-bottom: 10px;
+      letter-spacing: -0.02em;
+    }
+
+    h3 {
+      font-size: 16px;
+      margin-bottom: 8px;
+      letter-spacing: -0.01em;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      max-width: 920px;
+      margin-bottom: 0;
+      font-size: 15px;
+    }
+
+    .tagline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 10px;
+      background: var(--surface-soft);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 12px;
+      color: #344054;
+      white-space: nowrap;
+    }
+
+    .pill.accent { background: var(--accent-soft); color: #1d4ed8; border-color: #d8e8ff; }
+    .pill.green { background: #ecfdf3; color: #027a48; border-color: #d1fadf; }
+    .pill.amber { background: #fffaeb; color: #b54708; border-color: #fedf89; }
+    .pill.red { background: #fef3f2; color: #b42318; border-color: #fee4e2; }
+    .pill.purple { background: #f4f3ff; color: #5925dc; border-color: #e9d7fe; }
+
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+      max-width: 520px;
+    }
+
+    .nav a {
+      color: #344054;
+      text-decoration: none;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 12px;
+      background: #fff;
+    }
+
+    .section {
+      margin-top: 24px;
+      padding: 24px;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      background: #fff;
+      box-shadow: var(--shadow);
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .section-header p {
+      color: var(--muted);
+      margin-bottom: 0;
+      max-width: 900px;
+      font-size: 14px;
+    }
+
+    .grid { display: grid; gap: 16px; }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .grid-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+
+    .metric-card {
+      padding: 18px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+
+    .metric-title { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+    .metric-value { font-size: 28px; font-weight: 760; letter-spacing: -0.04em; margin-bottom: 6px; line-height: 1.05; }
+    .metric-caption { color: var(--muted); font-size: 12px; margin-bottom: 0; }
+
+    .chart-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      overflow: hidden;
+      min-height: 380px;
+    }
+
+    .chart-card.compact { min-height: 280px; }
+    .chart-card.tall { min-height: 460px; }
+
+    .chart-title {
+      padding: 16px 18px 0;
+      margin-bottom: 0;
+      font-size: 15px;
+    }
+
+    .chart-desc {
+      padding: 4px 18px 0;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 0;
+    }
+
+    .plot { width: 100%; height: 330px; }
+    .plot.compact { height: 240px; }
+    .plot.tall { height: 410px; }
+
+    .segment-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 184px;
+    }
+
+    .segment-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .segment-name { font-size: 15px; font-weight: 750; line-height: 1.25; }
+    .segment-desc { font-size: 12px; color: var(--muted); margin-bottom: 0; }
+    .segment-meta { display: grid; gap: 6px; margin-top: auto; }
+    .segment-meta div { font-size: 12px; color: #344054; }
+    .segment-meta strong { color: #111827; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 650;
+      white-space: nowrap;
+      background: var(--surface-soft);
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+
+    .badge.blue { background: var(--accent-soft); color: #1d4ed8; border-color: #d8e8ff; }
+    .badge.green { background: #ecfdf3; color: #027a48; border-color: #d1fadf; }
+    .badge.amber { background: #fffaeb; color: #b54708; border-color: #fedf89; }
+    .badge.red { background: #fef3f2; color: #b42318; border-color: #fee4e2; }
+    .badge.purple { background: #f4f3ff; color: #5925dc; border-color: #e9d7fe; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      border-spacing: 0;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 13px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--surface-soft);
+      font-size: 12px;
+      color: #344054;
+      font-weight: 750;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+    td { color: #344054; }
+
+    .flow-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .flow-step {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px;
+      background: var(--surface-soft);
+      min-height: 108px;
+    }
+
+    .flow-step strong { display: block; font-size: 13px; margin-bottom: 6px; }
+    .flow-step span { color: var(--muted); font-size: 12px; display: block; }
+
+    .callout {
+      border: 1px solid #d8e8ff;
+      background: #f8fbff;
+      color: #344054;
+      border-radius: var(--radius);
+      padding: 16px;
+      font-size: 13px;
+    }
+
+    @media (max-width: 1100px) {
+      .topbar { flex-direction: column; }
+      .nav { justify-content: flex-start; max-width: 100%; }
+      .grid-5, .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; }
+      .flow-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .section-header { flex-direction: column; }
+    }
+
+    @media (max-width: 640px) {
+      .page { padding: 16px; }
+      .topbar, .section { padding: 18px; border-radius: 20px; }
+      h1 { font-size: 28px; }
+      .flow-grid { grid-template-columns: 1fr; }
+      table { display: block; overflow-x: auto; white-space: nowrap; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="topbar">
+      <div>
+        <h1>Дэшборд результатов ЦА<br>White-label Hedging Bot</h1>
+        <p class="subtitle">Итоговая модель по документу: кому продавать систему автоматизации стратегии “ликвидность + хедж”, какие сегменты являются прямой ЦА, где партнерские каналы, а какие запросы нужно отсекать</p>
+        <div class="tagline">
+          <span class="pill accent">Фокус - LP + hedge</span>
+          <span class="pill green">P1 - платформы доходности</span>
+          <span class="pill purple">Сильная связка - Raydium + Orderly</span>
+          <span class="pill red">Не trading bot и не гарантированная доходность</span>
+        </div>
+      </div>
+      <nav class="nav">
+        <a href="#model">Модель ЦА</a>
+        <a href="#segments">Сегменты</a>
+        <a href="#pains">Боли</a>
+        <a href="#packages">Упаковки</a>
+        <a href="#qualification">Квалификация</a>
+        <a href="#not-target">Не ЦА</a>
+      </nav>
+    </section>
+
+    <section class="section" id="model">
+      <div class="section-header">
+        <div>
+          <h2>Итоговая модель ЦА</h2>
+          <p>Стартовый фокус - клиенты, которым нужна управляемая стратегия LP + hedge с контролем риска, а не обычная автоматизация ордеров или сигналов</p>
+        </div>
+        <span class="badge blue">Результаты</span>
+      </div>
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Приоритет сегментов</h3>
+          <p class="chart-desc">Чем выше значение, тем ближе сегмент к текущей конфигурации продукта</p>
+          <div id="priorityBar" class="plot"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Fit vs коммерческий потенциал</h3>
+          <p class="chart-desc">Положение сегмента в итоговой модели, не карта источников</p>
+          <div id="fitPotential" class="plot"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="segments">
+      <div class="section-header">
+        <div>
+          <h2>Описание выделенных сегментов</h2>
+          <p>Кратко: кто клиент, зачем ему хедж-бот и где основной риск</p>
+        </div>
+        <span class="badge green">Сегменты</span>
+      </div>
+      <div class="grid grid-3">
+        <div class="segment-card">
+          <div class="segment-top"><div class="segment-name">Платформы управляемой доходности</div><span class="badge blue">P1</span></div>
+          <p class="segment-desc">DeFi-платформы, создатели стратегий, продукты с пулами для вкладчиков</p>
+          <div class="segment-meta"><div><strong>Зачем:</strong> запустить стратегию под брендом</div><div><strong>Риск:</strong> отчеты, legal, раскрытие рисков</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div class="segment-name">Фонды и профессиональные управляющие</div><span class="badge blue">P2</span></div>
+          <p class="segment-desc">DeFi-фонды, криптофонды, family offices, управляющие цифровыми активами</p>
+          <div class="segment-meta"><div><strong>Зачем:</strong> внутренняя стратегия без ручного контроля</div><div><strong>Риск:</strong> Telegram недостаточен, нужны роли и отчеты</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div class="segment-name">Поставщики ликвидности и маркет-мейкеры</div><span class="badge green">P3</span></div>
+          <p class="segment-desc">Профессиональные LP, market makers, trading teams, команды ликвидности</p>
+          <div class="segment-meta"><div><strong>Зачем:</strong> автоматизировать LP, хедж и риск</div><div><strong>Риск:</strong> могут выбрать собственную разработку</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div class="segment-name">Solana DeFi-продукты</div><span class="badge green">P4</span></div>
+          <p class="segment-desc">Продукты вокруг Raydium, Orca, Jupiter, Drift, Orderly и Solana DeFi</p>
+          <div class="segment-meta"><div><strong>Зачем:</strong> готовая стратегия в близкой среде</div><div><strong>Риск:</strong> узость Raydium + Orderly</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div class="segment-name">Площадки фьючерсов и торговые витрины</div><span class="badge purple">Partner</span></div>
+          <p class="segment-desc">Orderly-партнеры, DEX-фронты, торговые витрины, perps-продукты</p>
+          <div class="segment-meta"><div><strong>Зачем:</strong> добавить стратегию поверх инфраструктуры</div><div><strong>Риск:</strong> скорее канал, чем конечный ICP</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div class="segment-name">Торговые сообщества и продавцы ботов</div><span class="badge amber">Fast / risky</span></div>
+          <p class="segment-desc">Telegram-сообщества, закрытые клубы, провайдеры стратегий</p>
+          <div class="segment-meta"><div><strong>Зачем:</strong> быстрый white-label для подписчиков</div><div><strong>Риск:</strong> обещания доходности, поддержка, регулирование</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div class="segment-name">Биржи, брокеры и сервисы капитала</div><span class="badge purple">Strategy</span></div>
+          <p class="segment-desc">CEX, брокеры, wealth-платформы, сервисы капитала</p>
+          <div class="segment-meta"><div><strong>Зачем:</strong> добавить DeFi-доходность клиентам</div><div><strong>Риск:</strong> compliance, suitability, длинная продажа</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div class="segment-name">Кошельки и portfolio apps</div><span class="badge amber">Adjacent</span></div>
+          <p class="segment-desc">Кошельки, портфельные приложения, DeFi-агрегаторы</p>
+          <div class="segment-meta"><div><strong>Зачем:</strong> показать стратегию внутри интерфейса</div><div><strong>Риск:</strong> нужен API, не Telegram</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div class="segment-name">DAO и token-проекты</div><span class="badge amber">Check</span></div>
+          <p class="segment-desc">DAO, казначейства протоколов, token-проекты с ликвидностью</p>
+          <div class="segment-meta"><div><strong>Зачем:</strong> управлять ликвидностью токена</div><div><strong>Риск:</strong> хедж часто невозможен</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="pains">
+      <div class="section-header">
+        <div>
+          <h2>Боли по результатам анализа</h2>
+          <p>Главные боли связаны не с открытием сделки, а с безопасным сопровождением LP + hedge стратегии: маржа, funding, ликвидация, исполнение, отчеты и ключи</p>
+        </div>
+        <span class="badge amber">Pain map</span>
+      </div>
+      <div class="grid grid-2">
+        <div class="chart-card tall">
+          <h3 class="chart-title">Главные B2B-боли</h3>
+          <p class="chart-desc">Оценка влияния боли на покупку продукта</p>
+          <div id="painBars" class="plot tall"></div>
+        </div>
+        <div class="chart-card tall">
+          <h3 class="chart-title">Боли по сегментам</h3>
+          <p class="chart-desc">Матрица показывает, что важно каждому типу клиента</p>
+          <div id="painHeatmap" class="plot tall"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="packages">
+      <div class="section-header">
+        <div>
+          <h2>Продуктовые упаковки</h2>
+          <p>Одна технология может продаваться разными пакетами: стратегия доходности, внутренний бот фонда, автоматизация LP/MM, Solana-пакет или Telegram-пакет для сообществ</p>
+        </div>
+        <span class="badge purple">Packaging</span>
+      </div>
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Сравнение упаковок</h3>
+          <p class="chart-desc">Что сильнее нужно в каждом пакете</p>
+          <div id="packageRadar" class="plot"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Требования к продуктовой зрелости</h3>
+          <p class="chart-desc">Telegram достаточен не для всех сегментов</p>
+          <div id="readinessBar" class="plot"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="qualification">
+      <div class="section-header">
+        <div>
+          <h2>Квалификация лида</h2>
+          <p>Фильтр помогает отделять прямую ЦА хедж-бота от клиентов, которым нужен trading bot, автокомпаундер, риск-аналитика или фьючерсная инфраструктура</p>
+        </div>
+        <span class="badge green">Sales filter</span>
+      </div>
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Воронка проверки лида</h3>
+          <p class="chart-desc">Если лид не проходит первые 3 вопроса, это обычно не хедж-бот</p>
+          <div id="leadFunnel" class="plot"></div>
+        </div>
+        <div>
+          <table>
+            <thead>
+              <tr>
+                <th>Проверочный вопрос</th>
+                <th>Если да</th>
+                <th>Если нет</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Клиент понимает LP, CLMM, hedge и funding?</td><td>Есть базовый fit</td><td>Нужно обучение или другой продукт</td></tr>
+              <tr><td>Есть капитал, стратегия или аудитория?</td><td>Можно обсуждать пилот</td><td>Слабая коммерческая основа</td></tr>
+              <tr><td>Нужна именно LP + hedge стратегия?</td><td>Прямая ЦА</td><td>Может быть trading bot / ALM</td></tr>
+              <tr><td>Нужны риск, отчеты и журнал действий?</td><td>Профессиональный B2B</td><td>Возможно community-пакет</td></tr>
+              <tr><td>Нужен white-label или внутренний продукт?</td><td>Сильный B2B-сценарий</td><td>Может быть обычный инструмент</td></tr>
+              <tr><td>Готовы не обещать доходность?</td><td>Можно продолжать</td><td>Высокий legal / reputation risk</td></tr>
+            </tbody>
+          </table>
+          <div class="callout" style="margin-top:16px">Главный фильтр - стратегия LP + hedge + риск-контроль. Без этого запрос чаще уходит в trading bot, ALM, risk analytics или DEX infrastructure</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="not-target">
+      <div class="section-header">
+        <div>
+          <h2>Что не является прямой ЦА</h2>
+          <p>Эти направления могут быть коммерчески интересны, но относятся к другим продуктам, партнерствам или будущим версиям</p>
+        </div>
+        <span class="badge red">Отсечение</span>
+      </div>
+      <div class="grid grid-2">
+        <div class="chart-card compact">
+          <h3 class="chart-title">Прямая ЦА vs нецелевые запросы</h3>
+          <p class="chart-desc">Условная оценка близости к текущему продукту</p>
+          <div id="targetFit" class="plot compact"></div>
+        </div>
+        <div>
+          <table>
+            <thead>
+              <tr>
+                <th>Запрос</th>
+                <th>Почему не фокус</th>
+                <th>Куда относить</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>Обычный trading bot</strong></td><td>Сигналы, сетки, копирование сделок, ордера</td><td>Trading bot / signal bot</td></tr>
+              <tr><td><strong>Только автокомпаундер</strong></td><td>Нет хеджа, funding, маржи и риска ликвидации</td><td>ALM / auto-compounder</td></tr>
+              <tr><td><strong>DEX / perps infrastructure</strong></td><td>Нужна площадка исполнения, а не стратегия</td><td>DEX Futures / Orderly / trading infrastructure</td></tr>
+              <tr><td><strong>Risk analytics only</strong></td><td>Нужны симуляции и отчеты без исполнения</td><td>Risk analytics / simulation</td></tr>
+              <tr><td><strong>Signal bot</strong></td><td>Нет LP-позиции, хеджа и сопровождения стратегии</td><td>Subscription bot</td></tr>
+              <tr><td><strong>Liquidity без хеджа</strong></td><td>Ключевая ценность продукта теряется</td><td>Liquidity management / ALM</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const COLORS = {
+      blue: '#1f6feb',
+      green: '#12b76a',
+      amber: '#f79009',
+      red: '#f04438',
+      purple: '#7a5af8',
+      gray: '#98a2b3',
+      navy: '#344054',
+      lightBlue: '#d8e8ff',
+      lightGreen: '#d1fadf',
+      lightAmber: '#fedf89',
+      lightRed: '#fee4e2',
+      lightPurple: '#e9d7fe'
+    };
+
+    const layoutBase = {
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      font: { family: 'Inter, Arial, sans-serif', color: '#344054', size: 12 },
+      margin: { l: 42, r: 24, t: 20, b: 42 },
+      showlegend: true,
+      legend: { orientation: 'h', y: -0.18, x: 0, font: { size: 11 } }
+    };
+
+    const config = { responsive: true, displayModeBar: false };
+
+    Plotly.newPlot('priorityBar', [{
+      type: 'bar',
+      x: [9.6, 9.3, 8.8, 8.6, 7.4, 6.8, 6.3, 5.8, 5.5],
+      y: [
+        'Платформы доходности',
+        'Фонды / управляющие',
+        'LP / маркет-мейкеры',
+        'Solana DeFi',
+        'Фьючерсные витрины',
+        'Торговые сообщества',
+        'Биржи / брокеры',
+        'Кошельки / portfolio',
+        'DAO / token-проекты'
+      ].reverse(),
+      orientation: 'h',
+      marker: { color: [COLORS.blue, COLORS.blue, COLORS.green, COLORS.green, COLORS.purple, COLORS.amber, COLORS.purple, COLORS.gray, COLORS.gray].reverse() },
+      hovertemplate: '%{y}: %{x}/10<extra></extra>'
+    }], { ...layoutBase, xaxis: { range: [0, 10], gridcolor: '#eef0f3' }, yaxis: { automargin: true }, showlegend: false, margin: { l: 170, r: 24, t: 20, b: 36 } }, config);
+
+    Plotly.newPlot('fitPotential', [{
+      type: 'scatter',
+      mode: 'markers+text',
+      x: [9.5, 9.0, 8.7, 8.8, 7.2, 6.4, 6.8, 5.5, 5.7],
+      y: [8.8, 9.4, 8.9, 8.0, 7.4, 6.5, 8.7, 6.8, 6.2],
+      text: ['Доходность', 'Фонды', 'LP/MM', 'Solana', 'Perps channel', 'Communities', 'Brokers', 'Wallets', 'DAO'],
+      textposition: 'top center',
+      marker: {
+        size: [26, 26, 23, 22, 19, 17, 19, 15, 15],
+        color: [COLORS.blue, COLORS.blue, COLORS.green, COLORS.green, COLORS.purple, COLORS.amber, COLORS.purple, COLORS.gray, COLORS.gray],
+        line: { color: '#ffffff', width: 2 }
+      },
+      hovertemplate: '%{text}<br>Fit: %{x}/10<br>Потенциал: %{y}/10<extra></extra>'
+    }], { ...layoutBase, xaxis: { title: 'Product fit', range: [4, 10], gridcolor: '#eef0f3' }, yaxis: { title: 'Коммерческий потенциал', range: [4, 10], gridcolor: '#eef0f3' }, showlegend: false }, config);
+
+    Plotly.newPlot('painBars', [{
+      type: 'bar',
+      orientation: 'h',
+      x: [10, 10, 10, 9.7, 9.5, 9.2, 9.0, 8.8, 8.5, 8.2, 8.0, 7.8, 7.6, 7.2],
+      y: [
+        'Нет backtesting',
+        'Риск ликвидации',
+        'Неверный hedge ratio',
+        'Частичное исполнение',
+        'Сбой API / RPC',
+        'Нет PnL-отчета',
+        'Funding как расход',
+        'Риск ключей',
+        'Out-of-range LP',
+        'Telegram слаб для pro',
+        'Legal risk',
+        'Сложно объяснить стратегию',
+        'Нет ролей и прав',
+        'Узость Raydium + Orderly'
+      ].reverse(),
+      marker: { color: [COLORS.red, COLORS.red, COLORS.red, COLORS.red, COLORS.red, COLORS.blue, COLORS.blue, COLORS.blue, COLORS.green, COLORS.amber, COLORS.purple, COLORS.amber, COLORS.blue, COLORS.gray].reverse() },
+      hovertemplate: '%{y}: %{x}/10<extra></extra>'
+    }], { ...layoutBase, xaxis: { range: [0, 10], gridcolor: '#eef0f3' }, yaxis: { automargin: true }, showlegend: false, margin: { l: 170, r: 24, t: 20, b: 36 } }, config);
+
+    Plotly.newPlot('painHeatmap', [{
+      type: 'heatmap',
+      z: [
+        [9, 10, 9, 7, 6],
+        [9, 10, 8, 7, 5],
+        [8, 9, 10, 8, 6],
+        [7, 8, 8, 9, 7],
+        [8, 10, 9, 7, 6],
+        [8, 10, 7, 6, 5],
+        [7, 8, 8, 6, 4],
+        [6, 10, 8, 5, 5],
+        [5, 7, 6, 10, 5]
+      ],
+      x: ['Доходность', 'Фонды', 'LP/MM', 'Сообщества', 'DAO'],
+      y: [
+        'Backtesting',
+        'Маржа / ликвидация',
+        'Исполнение',
+        'Доступы / пользователи',
+        'PnL и отчеты',
+        'Ключи',
+        'Funding',
+        'Роли / аудит',
+        'Legal'
+      ],
+      colorscale: [
+        [0, '#f7f8fa'],
+        [0.35, '#d8e8ff'],
+        [0.7, '#f79009'],
+        [1, '#f04438']
+      ],
+      showscale: false,
+      hovertemplate: '%{y}<br>%{x}: %{z}/10<extra></extra>'
+    }], { ...layoutBase, xaxis: { side: 'top' }, yaxis: { automargin: true }, showlegend: false, margin: { l: 130, r: 18, t: 70, b: 20 } }, config);
+
+    Plotly.newPlot('packageRadar', [
+      {
+        type: 'scatterpolar',
+        r: [10, 8, 9, 7, 8, 10],
+        theta: ['WL', 'Telegram', 'Risk reports', 'API', 'Access', 'Strategy'],
+        fill: 'toself',
+        name: 'Managed Yield WL',
+        line: { color: COLORS.blue }
+      },
+      {
+        type: 'scatterpolar',
+        r: [5, 4, 10, 9, 7, 10],
+        theta: ['WL', 'Telegram', 'Risk reports', 'API', 'Access', 'Strategy'],
+        fill: 'toself',
+        name: 'Fund Internal Bot',
+        line: { color: COLORS.green }
+      },
+      {
+        type: 'scatterpolar',
+        r: [6, 3, 9, 10, 6, 9],
+        theta: ['WL', 'Telegram', 'Risk reports', 'API', 'Access', 'Strategy'],
+        fill: 'toself',
+        name: 'LP / MM Automation',
+        line: { color: COLORS.purple }
+      },
+      {
+        type: 'scatterpolar',
+        r: [9, 10, 5, 4, 9, 7],
+        theta: ['WL', 'Telegram', 'Risk reports', 'API', 'Access', 'Strategy'],
+        fill: 'toself',
+        name: 'Community Bot',
+        line: { color: COLORS.amber }
+      }
+    ], { ...layoutBase, polar: { radialaxis: { visible: true, range: [0, 10], gridcolor: '#eef0f3' }, angularaxis: { gridcolor: '#eef0f3' } }, margin: { l: 24, r: 24, t: 20, b: 40 }, legend: { orientation: 'h', y: -0.15, x: 0, font: { size: 10 } } }, config);
+
+    Plotly.newPlot('readinessBar', [{
+      type: 'bar',
+      x: ['Telegram MVP', 'Риск-отчеты', 'Backtesting', 'Панель', 'API', 'Роли', 'Self-hosted'],
+      y: [8, 9, 9, 8, 7, 8, 6],
+      marker: { color: [COLORS.amber, COLORS.blue, COLORS.blue, COLORS.green, COLORS.purple, COLORS.green, COLORS.gray] },
+      hovertemplate: '%{x}: %{y}/10<extra></extra>'
+    }], { ...layoutBase, yaxis: { range: [0, 10], gridcolor: '#eef0f3' }, xaxis: { tickangle: -25 }, showlegend: false }, config);
+
+    Plotly.newPlot('leadFunnel', [{
+      type: 'funnel',
+      y: ['Понимает LP + hedge', 'Есть капитал / аудитория', 'Нужна стратегия', 'Нужен риск-контроль', 'Готов к pilot', 'Нет обещаний доходности'],
+      x: [100, 82, 70, 58, 43, 34],
+      marker: { color: [COLORS.blue, COLORS.blue, COLORS.green, COLORS.green, COLORS.amber, COLORS.red] },
+      textinfo: 'value+percent initial',
+      hovertemplate: '%{y}: %{x}<extra></extra>'
+    }], { ...layoutBase, margin: { l: 160, r: 24, t: 20, b: 30 }, showlegend: false }, config);
+
+    Plotly.newPlot('targetFit', [{
+      type: 'bar',
+      x: ['LP + hedge', 'Managed yield', 'Fund strategy', 'LP/MM', 'Token liquidity', 'ALM', 'Risk analytics', 'Trading bot', 'Signal bot'],
+      y: [10, 9.5, 9.2, 8.8, 5.5, 4.5, 4, 2.5, 2],
+      marker: { color: [COLORS.blue, COLORS.blue, COLORS.green, COLORS.green, COLORS.amber, COLORS.red, COLORS.red, COLORS.red, COLORS.red] },
+      hovertemplate: '%{x}: %{y}/10<extra></extra>'
+    }], { ...layoutBase, yaxis: { range: [0, 10], gridcolor: '#eef0f3' }, xaxis: { tickangle: -25 }, showlegend: false, margin: { l: 36, r: 18, t: 20, b: 90 } }, config);
+  </script>
+</body>
+</html>
