@@ -322,11 +322,9 @@
       </div>
       <nav class="nav">
         <a href="#summary">Структура</a>
-        <a href="#call-scenarios">Сценарии</a>
         <a href="#model">Модель ЦА</a>
         <a href="#segments">Сегменты</a>
         <a href="#pains">Боли</a>
-        <a href="#readiness">Готовность</a>
         <a href="#qualification">Квалификация</a>
         <a href="#not-target">Не ЦА</a>
       </nav>
@@ -353,8 +351,6 @@
         </div>
       </div>
     </section>
-
-   
 
     <section class="section" id="model">
       <div class="section-header">
@@ -456,8 +452,6 @@
         </div>
       </div>
     </section>
-
-   
 
     <section class="section" id="qualification">
       <div class="section-header">
@@ -564,8 +558,6 @@ Plotly.newPlot('demandTypes', [{
   hovertemplate:'%{y}<br>Близость: %{x}<extra></extra>'
 }], {...layoutBase, margin:{l:205,r:48,t:20,b:34}, xaxis:{range:[0,100], gridcolor:'#eef1f5'}, yaxis:{autorange:'reversed'}}, config);
 
-
-
 Plotly.newPlot('priorityBar', [{
   type:'bar', orientation:'h',
   y:['Агентства и лидогенерация','VoIP / облачная телефония / MSP','Outbound sales / SDR','BPO и контакт-центры','Bitrix-focused caller','Недвижимость / страхование','Healthcare / clinics','Education / admissions','Сервисные SMB','Recruitment / HR','CRM / SalesTech platforms','Enterprise support / CX','Collections / reminders'],
@@ -621,16 +613,6 @@ Plotly.newPlot('painHeatmap', [{
   showscale:true, colorbar:{title:'Сила'},
   hovertemplate:'%{y}<br>%{x}: %{z}/10<extra></extra>'
 }], {...layoutBase, margin:{l:105,r:20,t:20,b:100}, xaxis:{tickangle:-35}, yaxis:{autorange:'reversed'}}, config);
-
-
-Plotly.newPlot('featureBars', [{
-  type:'bar',
-  x:['Кампании','Импорт / сегменты','ИИ-агенты','Записи / транскрипты','Bitrix / CRM','White-label','Subaccounts','Биллинг','SIP / BYOC','DNC / consent','Disclosure','Handoff','Calendar','Webhooks / API','QA dashboard'],
-  y:[10,9,10,9,10,9,8,8,8,9,9,7,7,8,8],
-  marker:{color:['#1f6feb','#1f6feb','#1f6feb','#12b76a','#12b76a','#1f6feb','#1f6feb','#1f6feb','#7a5af8','#f04438','#f04438','#f79009','#f79009','#7a5af8','#12b76a']},
-  hovertemplate:'%{x}: %{y}/10<extra></extra>'
-}], {...layoutBase, margin:{l:42,r:20,t:20,b:130}, yaxis:{title:'Критичность', range:[0,10]}, xaxis:{tickangle:-35}}, config);
-
 
 
 Plotly.newPlot('leadFunnel', [{
