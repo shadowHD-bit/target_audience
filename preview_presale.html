@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Дэшборд результатов ЦА - Presale / Token Sale</title>
+  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --surface: #ffffff;
+      --surface-soft: #f7f8fa;
+      --border: #e8ebef;
+      --text: #111827;
+      --muted: #667085;
+      --muted-2: #98a2b3;
+      --accent: #1f6feb;
+      --accent-soft: #eef5ff;
+      --green: #12b76a;
+      --amber: #f79009;
+      --red: #f04438;
+      --purple: #7a5af8;
+      --shadow: 0 8px 28px rgba(16, 24, 40, 0.06);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.5;
+    }
+
+    .page {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 28px 28px 60px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 24px;
+      padding: 28px;
+      border: 1px solid var(--border);
+      border-radius: 26px;
+      box-shadow: var(--shadow);
+      background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+      margin-bottom: 22px;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+
+    h1 {
+      font-size: 34px;
+      line-height: 1.1;
+      margin-bottom: 12px;
+      letter-spacing: -0.04em;
+    }
+
+    h2 {
+      font-size: 22px;
+      margin-bottom: 10px;
+      letter-spacing: -0.02em;
+    }
+
+    h3 {
+      font-size: 16px;
+      margin-bottom: 8px;
+      letter-spacing: -0.01em;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      max-width: 900px;
+      margin-bottom: 0;
+      font-size: 15px;
+    }
+
+    .tagline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 10px;
+      background: var(--surface-soft);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 12px;
+      color: #344054;
+      white-space: nowrap;
+    }
+
+    .pill.accent { background: var(--accent-soft); color: #1d4ed8; border-color: #d8e8ff; }
+    .pill.green { background: #ecfdf3; color: #027a48; border-color: #d1fadf; }
+    .pill.amber { background: #fffaeb; color: #b54708; border-color: #fedf89; }
+    .pill.red { background: #fef3f2; color: #b42318; border-color: #fee4e2; }
+    .pill.purple { background: #f4f3ff; color: #5925dc; border-color: #e9d7fe; }
+
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+      max-width: 520px;
+    }
+
+    .nav a {
+      color: #344054;
+      text-decoration: none;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 12px;
+      background: #fff;
+    }
+
+    .section {
+      margin-top: 24px;
+      padding: 24px;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      background: #fff;
+      box-shadow: var(--shadow);
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .section-header p {
+      color: var(--muted);
+      margin-bottom: 0;
+      max-width: 900px;
+      font-size: 14px;
+    }
+
+    .grid { display: grid; gap: 16px; }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .grid-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+
+    .metric-card {
+      padding: 18px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+
+    .metric-title { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+    .metric-value { font-size: 30px; font-weight: 760; letter-spacing: -0.04em; margin-bottom: 6px; }
+    .metric-caption { color: var(--muted); font-size: 12px; margin-bottom: 0; }
+
+    .chart-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      overflow: hidden;
+      min-height: 380px;
+    }
+
+    .chart-card.compact { min-height: 280px; }
+    .chart-card.tall { min-height: 460px; }
+
+    .chart-title {
+      padding: 16px 18px 0;
+      margin-bottom: 0;
+      font-size: 15px;
+    }
+
+    .chart-desc {
+      padding: 4px 18px 0;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 0;
+    }
+
+    .plot { width: 100%; height: 330px; }
+    .plot.compact { height: 240px; }
+    .plot.tall { height: 410px; }
+
+    .segment-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 190px;
+    }
+
+    .segment-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .segment-name { font-size: 15px; font-weight: 750; line-height: 1.25; }
+    .segment-desc { font-size: 12px; color: var(--muted); margin-bottom: 0; }
+    .segment-meta { display: grid; gap: 6px; margin-top: auto; }
+    .segment-meta div { font-size: 12px; color: #344054; }
+    .segment-meta strong { color: #111827; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 650;
+      white-space: nowrap;
+      background: var(--surface-soft);
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+
+    .badge.blue { background: var(--accent-soft); color: #1d4ed8; border-color: #d8e8ff; }
+    .badge.green { background: #ecfdf3; color: #027a48; border-color: #d1fadf; }
+    .badge.amber { background: #fffaeb; color: #b54708; border-color: #fedf89; }
+    .badge.red { background: #fef3f2; color: #b42318; border-color: #fee4e2; }
+    .badge.purple { background: #f4f3ff; color: #5925dc; border-color: #e9d7fe; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      border-spacing: 0;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 13px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--surface-soft);
+      font-size: 12px;
+      color: #344054;
+      font-weight: 750;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+    td { color: #344054; }
+
+    .small-note {
+      color: var(--muted);
+      font-size: 12px;
+      margin: 12px 0 0;
+    }
+
+    .flow-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .flow-step {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px;
+      background: var(--surface-soft);
+      min-height: 108px;
+    }
+
+    .flow-step strong { display: block; font-size: 13px; margin-bottom: 6px; }
+    .flow-step span { color: var(--muted); font-size: 12px; display: block; }
+
+    .callout {
+      border: 1px solid #d8e8ff;
+      background: #f8fbff;
+      color: #344054;
+      border-radius: var(--radius);
+      padding: 16px;
+      font-size: 13px;
+    }
+
+    @media (max-width: 1100px) {
+      .topbar { flex-direction: column; }
+      .nav { justify-content: flex-start; max-width: 100%; }
+      .grid-5, .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; }
+      .flow-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .section-header { flex-direction: column; }
+    }
+
+    @media (max-width: 640px) {
+      .page { padding: 16px; }
+      .topbar, .section { padding: 18px; border-radius: 20px; }
+      h1 { font-size: 28px; }
+      .flow-grid { grid-template-columns: 1fr; }
+      table { display: block; overflow-x: auto; white-space: nowrap; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="topbar">
+      <div>
+        <h1>Дэшборд результатов ЦА<br>Presale / Token Sale Platform</h1>
+        <p class="subtitle">Итоговая модель по документу: кому продавать presale-платформу, какие сегменты являются прямой ЦА, где нужен отдельный модуль, а какие запросы нужно отсекать</p>
+        <div class="tagline">
+          <span class="pill accent">Фокус - управляемый токенсейл</span>
+          <span class="pill green">P1 - токен-проекты перед TGE</span>
+          <span class="pill purple">Отдельный модуль - post-sale портал</span>
+          <span class="pill red">Мем-токены - только через фильтр риска</span>
+        </div>
+      </div>
+      <nav class="nav">
+        <a href="#summary">Обзор</a>
+        <a href="#model">Модель ЦА</a>
+        <a href="#segments">Сегменты</a>
+        <a href="#pains">Боли</a>
+        <a href="#packages">Что продавать</a>
+        <a href="#qualification">Квалификация</a>
+        <a href="#not-target">Не ЦА</a>
+      </nav>
+    </section>
+
+
+    <section class="section" id="model">
+      <div class="section-header">
+        <div>
+          <h2>Итоговая модель ЦА</h2>
+          <p>Основной фокус - токен-проекты и агентства. Launchpad, биржи и RWA - стратегические направления, но требуют доработок и юридического слоя</p>
+        </div>
+        <span class="badge blue">Результаты</span>
+      </div>
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Приоритет сегментов</h3>
+          <p class="chart-desc">Чем выше значение, тем ближе сегмент к текущему продукту и продаже</p>
+          <div id="priorityBar" class="plot"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Fit vs коммерческий потенциал</h3>
+          <p class="chart-desc">Положение сегмента в итоговой модели, не карта источников</p>
+          <div id="fitPotential" class="plot"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="segments">
+      <div class="section-header">
+        <div>
+          <h2>Описание выделенных сегментов</h2>
+          <p>Кратко: кто клиент, зачем ему продукт, что продавать и где основной риск</p>
+        </div>
+        <span class="badge green">Сегменты</span>
+      </div>
+      <div class="grid grid-3">
+        <div class="segment-card">
+          <div class="segment-top"><div class="segment-name">Собственные токен-проекты перед TGE</div><span class="badge blue">P1</span></div>
+          <p class="segment-desc">Web3, DeFi, AI, DePIN, utility-token проекты перед запуском токена</p>
+          <div class="segment-meta"><div><strong>Зачем:</strong> быстро запустить продажу под брендом</div><div><strong>Что продавать:</strong> white-label токенсейл</div><div><strong>Риск:</strong> аудит, legal, условия продажи</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div class="segment-name">Инфраструктурные и технологические токен-проекты</div><span class="badge blue">P2</span></div>
+          <p class="segment-desc">L1, L2, privacy, identity, data, wallet infrastructure, сетевые проекты</p>
+          <div class="segment-meta"><div><strong>Зачем:</strong> прозрачная продажа и аллокация</div><div><strong>Что продавать:</strong> управляемая продажа + trust layer</div><div><strong>Риск:</strong> сложные механики и раскрытия</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div class="segment-name">Агентства запуска токен-проектов</div><span class="badge green">P3</span></div>
+          <p class="segment-desc">Launch-агентства, маркетинговые студии, подрядчики по токеномике</p>
+          <div class="segment-meta"><div><strong>Зачем:</strong> повторяемый запуск для клиентов</div><div><strong>Что продавать:</strong> presale-kit для агентств</div><div><strong>Риск:</strong> границы ответственности</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div class="segment-name">Площадки запусков, инкубаторы, студии</div><span class="badge amber">P4</span></div>
+          <p class="segment-desc">Организации, которые проводят много продаж для портфельных проектов</p>
+          <div class="segment-meta"><div><strong>Зачем:</strong> много запусков на одной базе</div><div><strong>Что продавать:</strong> multi-project версия</div><div><strong>Риск:</strong> текущий продукт закрывает одну продажу</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div class="segment-name">Post-sale команды</div><span class="badge purple">P5</span></div>
+          <p class="segment-desc">Проекты, которые уже продали токен на другой площадке</p>
+          <div class="segment-meta"><div><strong>Зачем:</strong> автоматизировать выдачу и удержание</div><div><strong>Что продавать:</strong> портал клейма, вестинга и стейкинга</div><div><strong>Риск:</strong> импорт аллокаций</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div class="segment-name">Комьюнити-проекты и мем-токены</div><span class="badge red">P6</span></div>
+          <p class="segment-desc">Проекты, где ключевые факторы - скорость, вирусность и сообщество</p>
+          <div class="segment-meta"><div><strong>Зачем:</strong> быстрый sale с рефералами</div><div><strong>Что продавать:</strong> быстрый пакет с trust-фильтрами</div><div><strong>Риск:</strong> scam, legal, репутация</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div class="segment-name">Игровые, consumer и loyalty-токены</div><span class="badge amber">P7</span></div>
+          <p class="segment-desc">Игры, приложения, программы наград, фан-сообщества и consumer-продукты</p>
+          <div class="segment-meta"><div><strong>Зачем:</strong> запуск экономики и удержание</div><div><strong>Что продавать:</strong> sale + rewards + staking</div><div><strong>Риск:</strong> нужна реальная utility токена</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div class="segment-name">DAO и governance-first проекты</div><span class="badge amber">P8</span></div>
+          <p class="segment-desc">Сообщества, где продажа связана с будущим управлением</p>
+          <div class="segment-meta"><div><strong>Зачем:</strong> распределить силу голоса</div><div><strong>Что продавать:</strong> community sale + Snapshot</div><div><strong>Риск:</strong> sybil и whale-риски</div></div>
+        </div>
+        <div class="segment-card">
+          <div class="segment-top"><div class="segment-name">Биржи, кошельки, RWA и regulated</div><span class="badge">Стратегия</span></div>
+          <p class="segment-desc">Сегменты с высоким чеком, но длинной сделкой и сложной ответственностью</p>
+          <div class="segment-meta"><div><strong>Зачем:</strong> встроить ранний доступ или regulated sale</div><div><strong>Что продавать:</strong> corporate token sale модуль</div><div><strong>Риск:</strong> KYC/KYB, legal, отчеты, интеграции</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="pains">
+      <div class="section-header">
+        <div>
+          <h2>Боли по результатам анализа</h2>
+          <p>Основные боли связаны с управляемым запуском, доверием, выдачей токенов, раскрытиями и повторяемостью продаж</p>
+        </div>
+        <span class="badge amber">Pain map</span>
+      </div>
+      <div class="grid grid-2">
+        <div class="chart-card tall">
+          <h3 class="chart-title">Главные B2B-боли</h3>
+          <p class="chart-desc">Оценка влияния боли на покупку продукта</p>
+          <div id="painBars" class="plot tall"></div>
+        </div>
+        <div class="chart-card tall">
+          <h3 class="chart-title">Боли по сегментам</h3>
+          <p class="chart-desc">Матрица показывает, что важно каждому типу клиента</p>
+          <div id="painHeatmap" class="plot tall"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="packages">
+      <div class="section-header">
+        <div>
+          <h2>Что продавать каждому сегменту</h2>
+          <p>Дэшборд показывает не только “кто ЦА”, но и какая упаковка нужна каждому типу покупателя</p>
+        </div>
+        <span class="badge purple">Упаковки</span>
+      </div>
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Сегмент → продуктовая упаковка</h3>
+          <p class="chart-desc">Рекомендуемая маршрутизация коммерческого предложения</p>
+          <div id="packageSankey" class="plot"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Критичность продуктовых слоев</h3>
+          <p class="chart-desc">Что нужно усиливать в продукте и продаже</p>
+          <div id="featureBars" class="plot"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="qualification">
+      <div class="section-header">
+        <div>
+          <h2>Квалификация лида</h2>
+          <p>Короткий фильтр, чтобы отделять прямую ЦА presale-платформы от маркетинга, платежей, token factory и regulated-STO</p>
+        </div>
+        <span class="badge green">Sales filter</span>
+      </div>
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Воронка проверки лида</h3>
+          <p class="chart-desc">Если лид не проходит первые 3 вопроса, это обычно не presale-платформа</p>
+          <div id="leadFunnel" class="plot"></div>
+        </div>
+        <div>
+          <table>
+            <thead>
+              <tr>
+                <th>Проверочный вопрос</th>
+                <th>Если да</th>
+                <th>Если нет</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Клиент продает собственный токен или токен клиента?</td><td>Потенциальная ЦА</td><td>Не целевой лид</td></tr>
+              <tr><td>Нужна брендированная страница продажи?</td><td>Подходит текущий продукт</td><td>Может хватить внешней площадки</td></tr>
+              <tr><td>Нужны фазы, лимиты, условия участия?</td><td>Сильный fit</td><td>Может быть обычный платежный сбор</td></tr>
+              <tr><td>Нужны клейм, вестинг или стейкинг?</td><td>Очень сильный fit</td><td>Может быть лендинг или платежный модуль</td></tr>
+              <tr><td>Клиент запускает продажи регулярно?</td><td>Сильный B2B-канал</td><td>Разовая продажа, проверять бюджет</td></tr>
+              <tr><td>Нужна регулируемая продажа ценных бумаг?</td><td>Нужен legal-стек</td><td>Можно смотреть текущий продукт</td></tr>
+            </tbody>
+          </table>
+          <div class="callout" style="margin-top:16px">Главный фильтр - клиенту нужна управляемая продажа токена и дальнейшая выдача токенов, а не только маркетинг, KYC, платежи или выпуск токена</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="not-target">
+      <div class="section-header">
+        <div>
+          <h2>Что не является прямой ЦА</h2>
+          <p>Эти направления могут быть коммерчески интересны, но относятся к другим продуктам, партнерствам или будущим версиям</p>
+        </div>
+        <span class="badge red">Отсечение</span>
+      </div>
+      <div class="grid grid-2">
+        <div class="chart-card compact">
+          <h3 class="chart-title">Прямая ЦА vs нецелевые запросы</h3>
+          <p class="chart-desc">Условная оценка близости к текущему продукту</p>
+          <div id="targetFit" class="plot compact"></div>
+        </div>
+        <div>
+          <table>
+            <thead>
+              <tr>
+                <th>Запрос</th>
+                <th>Почему не фокус</th>
+                <th>Куда относить</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>Только маркетинг токена</strong></td><td>Нет технологической продажи</td><td>Маркетинговое агентство</td></tr>
+              <tr><td><strong>Только выпуск токена</strong></td><td>Нет управляемого токенсейла</td><td>Token factory</td></tr>
+              <tr><td><strong>KYC / AML only</strong></td><td>Нужны проверки без продажи</td><td>Compliance-модуль</td></tr>
+              <tr><td><strong>Криптоплатежи без токенсейла</strong></td><td>Нужны платежи, статусы и возвраты</td><td>Криптопроцессинг</td></tr>
+              <tr><td><strong>Полный launchpad</strong></td><td>Нужны витрина, база участников и много проектов</td><td>Отдельная launchpad-платформа</td></tr>
+              <tr><td><strong>STO / regulated offering</strong></td><td>Нужны лицензии и investor eligibility</td><td>Regulated offering stack</td></tr>
+              <tr><td><strong>Сложный аукцион</strong></td><td>Нужны CCA / LBP / price discovery</td><td>Аукционный модуль</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+<script>
+const config = {displayModeBar: false, responsive: true};
+const layoutBase = {
+  font: {family: 'Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Arial, sans-serif', color: '#111827'},
+  paper_bgcolor: 'rgba(0,0,0,0)',
+  plot_bgcolor: 'rgba(0,0,0,0)',
+  margin: {l: 42, r: 20, t: 20, b: 42},
+  hoverlabel: {bgcolor: '#111827', font: {color: '#fff'}},
+  colorway: ['#1f6feb', '#12b76a', '#f79009', '#7a5af8', '#f04438', '#98a2b3']
+};
+
+Plotly.newPlot('priorityBar', [{
+  type:'bar', orientation:'h',
+  y:['Token projects перед TGE','Инфраструктурные token projects','Агентства запуска','Post-sale команды','Launchpads / инкубаторы','Мем-токены / community','Gaming / loyalty','DAO / governance','Биржи / кошельки','RWA / private markets','STO / securities'],
+  x:[96,91,89,84,78,66,62,58,54,50,24],
+  marker:{color:['#1f6feb','#1f6feb','#12b76a','#7a5af8','#f79009','#f04438','#f79009','#f79009','#98a2b3','#98a2b3','#f04438']},
+  text:['P1','P2','P3','P4','P5','P6','P7','P8','Стратегия','Стратегия','Не фокус'],
+  textposition:'outside',
+  hovertemplate:'%{y}<br>Приоритет: %{x}<extra></extra>'
+}], {...layoutBase, margin:{l:230,r:42,t:18,b:36}, xaxis:{range:[0,100], gridcolor:'#eef1f5'}, yaxis:{autorange:'reversed'}}, config);
+
+Plotly.newPlot('fitPotential', [{
+  type: 'scatter', mode: 'markers+text',
+  x: [94, 86, 88, 72, 76, 64, 60, 56, 48, 44, 28],
+  y: [96, 91, 87, 86, 76, 66, 62, 58, 54, 50, 24],
+  text: ['Token<br>projects', 'Infra<br>tokens', 'Launch<br>agencies', 'Post-sale<br>portal', 'Launchpads', 'Memecoin<br>community', 'Gaming /<br>loyalty', 'DAO /<br>governance', 'Exchange /<br>wallet', 'RWA / private<br>markets', 'STO<br>only'],
+  textposition: 'top center',
+  marker: {size: [36,34,34,30,31,26,24,23,22,22,18], color: ['#1f6feb','#1f6feb','#12b76a','#7a5af8','#f79009','#f04438','#f79009','#f79009','#98a2b3','#98a2b3','#f04438'], opacity: 0.86, line: {color: 'white', width: 2}},
+  hovertemplate: 'Коммерческий потенциал: %{x}<br>Fit с продуктом: %{y}<extra></extra>'
+}], {...layoutBase,
+  xaxis: {title: 'Коммерческий потенциал', range: [0, 100], gridcolor: '#eef1f5'},
+  yaxis: {title: 'Fit с текущим продуктом', range: [0, 100], gridcolor: '#eef1f5'},
+  shapes: [
+    {type:'line', x0:50, x1:50, y0:0, y1:100, line:{color:'#e8ebef', dash:'dot'}},
+    {type:'line', x0:0, x1:100, y0:50, y1:50, line:{color:'#e8ebef', dash:'dot'}}
+  ]
+}, config);
+
+Plotly.newPlot('painBars', [{
+  type:'bar', orientation:'h',
+  y:['Быстрый запуск перед TGE','Доверие покупателей','Клейм и вестинг','Юридические раскрытия','Owner-функции и безопасность','Фазы и лимиты','Повторяемость для агентств','Возвраты / soft cap','Подготовка к листингу','Рефералы без абуза','Multi-project для launchpad','Платежи разными активами'],
+  x:[96,94,92,90,89,86,88,84,82,78,80,74],
+  text:[96,94,92,90,89,86,88,84,82,78,80,74],
+  textposition:'outside',
+  marker:{color:['#1f6feb','#1f6feb','#7a5af8','#98a2b3','#f04438','#12b76a','#12b76a','#f79009','#98a2b3','#f79009','#f79009','#98a2b3']},
+  hovertemplate:'%{y}: %{x}<extra></extra>'
+}], {...layoutBase, margin:{l:235,r:34,t:20,b:36}, xaxis:{title:'Индекс влияния', range:[0,100], gridcolor:'#eef1f5'}, yaxis:{autorange:'reversed'}}, config);
+
+const segs = ['Token projects','Agencies','Infra tokens','Launchpads','Post-sale','Memecoin','RWA'];
+const reqs = ['Скорость','Trust layer','Клейм / вестинг','KYC / AML','Multi-project','Рефералы','Legal pack','Аудит'];
+const z = [
+  [10,9,10,7,3,7,8,9],
+  [10,8,8,6,7,9,6,7],
+  [8,10,10,9,5,6,10,10],
+  [8,10,9,10,10,7,10,9],
+  [7,8,10,6,2,3,6,7],
+  [10,8,8,5,2,10,5,7],
+  [5,10,8,10,6,3,10,9]
+];
+Plotly.newPlot('painHeatmap', [{
+  type:'heatmap', x:reqs, y:segs, z:z,
+  colorscale:[[0,'#f7f8fa'],[0.5,'#d8e8ff'],[1,'#1f6feb']],
+  showscale:true, colorbar:{title:'Сила'},
+  hovertemplate:'%{y}<br>%{x}: %{z}/10<extra></extra>'
+}], {...layoutBase, margin:{l:105,r:20,t:20,b:120}, xaxis:{tickangle:-35}, yaxis:{autorange:'reversed'}}, config);
+
+Plotly.newPlot('packageSankey', [{
+  type:'sankey', arrangement:'snap',
+  node:{pad:18, thickness:16, line:{color:'#e8ebef',width:1}, label:['Token projects','Infra tokens','Agencies','Launchpads','Post-sale teams','Memecoin / community','Exchange / RWA','White-label token sale','Managed sale + trust','Agency presale-kit','Multi-project version','Post-sale portal','Fast community sale','Corporate module'], color:['#eef5ff','#eef5ff','#ecfdf3','#fffaeb','#f4f3ff','#fef3f2','#f7f8fa','#1f6feb','#1f6feb','#12b76a','#f79009','#7a5af8','#f04438','#98a2b3']},
+  link:{source:[0,1,2,3,4,5,6], target:[7,8,9,10,11,12,13], value:[10,8,9,7,8,6,5], color:['rgba(31,111,235,.18)','rgba(31,111,235,.18)','rgba(18,183,106,.18)','rgba(247,144,9,.18)','rgba(122,90,248,.18)','rgba(240,68,56,.18)','rgba(102,112,133,.18)']}
+}], {...layoutBase, margin:{l:10,r:10,t:10,b:10}}, config);
+
+Plotly.newPlot('featureBars', [{
+  type:'bar',
+  x:['Фазы','WalletConnect','USDT/USDC/ETH','Клейм','Вестинг','Стейкинг','Рефералы','Вайтлист','Санкц. режим','FAQ / terms','Аудит / badges','Multi-project','Refund logic'],
+  y:[10,9,9,10,10,8,8,8,7,9,9,7,8],
+  marker:{color:['#1f6feb','#1f6feb','#1f6feb','#7a5af8','#7a5af8','#7a5af8','#f79009','#12b76a','#98a2b3','#98a2b3','#f04438','#f79009','#f79009']},
+  hovertemplate:'%{x}: %{y}/10<extra></extra>'
+}], {...layoutBase, margin:{l:42,r:20,t:20,b:125}, yaxis:{title:'Критичность', range:[0,10]}, xaxis:{tickangle:-35}}, config);
+
+Plotly.newPlot('leadFunnel', [{
+  type: 'funnel',
+  y: ['Есть токен или токен клиента','Нужна брендированная продажа','Нужны фазы / лимиты / условия','Нужны клейм / вестинг / стейкинг','Есть бюджет и legal readiness','Подходит presale-платформа'],
+  x: [100, 88, 76, 68, 52, 42],
+  textinfo: 'value+percent initial',
+  marker: {color: ['#1f6feb','#1f6feb','#12b76a','#7a5af8','#f79009','#12b76a']},
+  hovertemplate: '%{y}: %{x}<extra></extra>'
+}], {...layoutBase, margin:{l:190,r:24,t:20,b:30}}, config);
+
+Plotly.newPlot('targetFit', [{
+  type:'bar', orientation:'h',
+  y:['Прямой токенсейл','Post-sale portal','Agency kit','Launchpad platform','RWA / regulated','Auction sale','Marketing only','Token factory','KYC / AML only','Crypto payments'],
+  x:[96,86,88,62,50,44,22,20,18,16],
+  marker:{color:['#1f6feb','#7a5af8','#12b76a','#f79009','#98a2b3','#98a2b3','#f04438','#f04438','#f04438','#f04438']},
+  hovertemplate:'%{y}: %{x}<extra></extra>'
+}], {...layoutBase, margin:{l:160,r:20,t:12,b:34}, xaxis:{range:[0,100], gridcolor:'#eef1f5'}, yaxis:{autorange:'reversed'}}, config);
+</script>
+</body>
+</html>
