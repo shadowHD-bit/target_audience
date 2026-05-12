@@ -666,23 +666,6 @@ Plotly.newPlot('featureBars', [{
   hovertemplate:'%{x}: %{y}/10<extra></extra>'
 }], {...layoutBase, margin:{l:42,r:20,t:20,b:120}, yaxis:{title:'Критичность', range:[0,10]}, xaxis:{tickangle:-35}}, config);
 
-Plotly.newPlot('caseTypes', [{
-  type:'bar',
-  x:['Прямые кейсы','Близкие модули','Смежные B2B-сигналы','Слабые аналоги'],
-  y:[6,10,8,6],
-  marker:{color:['#1f6feb','#12b76a','#f79009','#98a2b3']},
-  hovertemplate:'%{x}: %{y}<extra></extra>'
-}], {...layoutBase, margin:{l:42,r:20,t:20,b:80}, yaxis:{title:'Количество / сила в таблице'}, xaxis:{tickangle:-20}}, config);
-
-Plotly.newPlot('caseSignals', [{
-  type:'radar',
-  r:[9,9,8,8,7,7,6],
-  theta:['Ликвидность','Оракулы','Риск','Данные','Compliance','API','Back office'],
-  fill:'toself',
-  marker:{color:'#1f6feb'},
-  line:{color:'#1f6feb'}
-}], {...layoutBase, polar:{radialaxis:{visible:true, range:[0,10], gridcolor:'#eef1f5'}, angularaxis:{gridcolor:'#eef1f5'}}, margin:{l:45,r:45,t:20,b:30}, showlegend:false}, config);
-
 Plotly.newPlot('nicheQuadrant', [{
   type:'scatter', mode:'markers+text',
   x:[62,70,78,84,58,66,55,72,60,76],
