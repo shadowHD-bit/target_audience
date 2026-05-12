@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Дэшборд анализа ЦА - Суперапп</title>
+  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --surface: #ffffff;
+      --surface-soft: #f7f8fa;
+      --border: #e8ebef;
+      --text: #111827;
+      --muted: #667085;
+      --muted-2: #98a2b3;
+      --accent: #1f6feb;
+      --accent-soft: #eef5ff;
+      --green: #12b76a;
+      --amber: #f79009;
+      --red: #f04438;
+      --purple: #7a5af8;
+      --shadow: 0 8px 28px rgba(16, 24, 40, 0.06);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.5;
+    }
+
+    .page {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 28px 28px 60px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 24px;
+      padding: 28px;
+      border: 1px solid var(--border);
+      border-radius: 26px;
+      box-shadow: var(--shadow);
+      background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+      margin-bottom: 22px;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+
+    h1 {
+      font-size: 34px;
+      line-height: 1.1;
+      margin-bottom: 12px;
+      letter-spacing: -0.04em;
+    }
+
+    h2 {
+      font-size: 22px;
+      margin-bottom: 10px;
+      letter-spacing: -0.02em;
+    }
+
+    h3 {
+      font-size: 16px;
+      margin-bottom: 8px;
+      letter-spacing: -0.01em;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      max-width: 900px;
+      margin-bottom: 0;
+      font-size: 15px;
+    }
+
+    .tagline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 10px;
+      background: var(--surface-soft);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 12px;
+      color: #344054;
+      white-space: nowrap;
+    }
+
+    .pill.accent { background: var(--accent-soft); color: #1d4ed8; border-color: #d8e8ff; }
+    .pill.green { background: #ecfdf3; color: #027a48; border-color: #d1fadf; }
+    .pill.amber { background: #fffaeb; color: #b54708; border-color: #fedf89; }
+
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+      max-width: 460px;
+    }
+
+    .nav a {
+      color: #344054;
+      text-decoration: none;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 12px;
+      background: #fff;
+    }
+
+    .section {
+      margin-top: 24px;
+      padding: 24px;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      background: #fff;
+      box-shadow: var(--shadow);
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .section-header p {
+      color: var(--muted);
+      margin-bottom: 0;
+      max-width: 860px;
+      font-size: 14px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    .metric-card {
+      padding: 18px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+
+    .metric-title {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .metric-value {
+      font-size: 32px;
+      font-weight: 750;
+      letter-spacing: -0.04em;
+      margin-bottom: 6px;
+    }
+
+    .metric-caption {
+      font-size: 12px;
+      color: var(--muted);
+      margin: 0;
+    }
+
+    .chart-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      overflow: hidden;
+      min-height: 380px;
+    }
+
+    .chart-title {
+      padding: 16px 18px 0;
+      margin-bottom: 0;
+      font-size: 15px;
+    }
+
+    .chart-desc {
+      padding: 4px 18px 0;
+      color: var(--muted);
+      font-size: 12px;
+      margin: 0;
+    }
+
+    .plot {
+      width: 100%;
+      height: 350px;
+    }
+
+    .plot.tall { height: 470px; }
+    .plot.short { height: 300px; }
+
+    .note {
+      border: 1px solid #d8e8ff;
+      background: var(--accent-soft);
+      color: #184a90;
+      border-radius: 18px;
+      padding: 16px 18px;
+      font-size: 14px;
+    }
+
+    .footer {
+      margin-top: 24px;
+      color: var(--muted-2);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    @media (max-width: 980px) {
+      .topbar { flex-direction: column; }
+      .nav { justify-content: flex-start; max-width: none; }
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+      .plot, .plot.tall { height: 360px; }
+      .section-header { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div>
+        <h1>Анализ ЦА супераппа</h1>
+        <p class="subtitle"></p>
+        <div class="tagline">
+          <span class="pill accent">Фокус - app-first</span>
+          <span class="pill">Кошелек + социальный слой</span>
+          <span class="pill">B2B</span>
+          <span class="pill">White-label</span>
+          <span class="pill green">4 основных ICP</span>
+          <span class="pill amber">Pay как усилитель</span>
+        </div>
+      </div>
+      <nav class="nav">
+        <a href="#summary">Обзор</a>
+        <a href="#segments">Сегменты</a>
+        <a href="#core">Ядро app</a>
+        <a href="#not-core">Не фокус</a>
+        <a href="#pains">Боли</a>
+        <a href="#formats">Упаковки</a>
+        <a href="#niches">Ниши</a>
+      </nav>
+    </header>
+
+    <section class="section" id="summary">
+      <div class="section-header">
+        <div>
+          <h2>Краткий результат</h2>
+          <p>Основной фокус - app, где кошелек связан с социальными функциями, P2P и удержанием</p>
+        </div>
+      </div>
+
+      <div class="grid grid-4">
+        <div class="metric-card">
+          <div class="metric-title">Основной коммерческий фокус</div>
+          <div class="metric-value">4</div>
+          <p class="metric-caption">кошельки, комьюнити, криптосервисы, стейблкоин P2P</p>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">Средний / смежный фокус</div>
+          <div class="metric-value">3</div>
+          <p class="metric-caption">social crypto, Web3, P2P-сообщества</p>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">Проверяемые сегменты</div>
+          <div class="metric-value">4</div>
+          <p class="metric-caption">бренды, loyalty, игры, creator, TON-ниши</p>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">Не прямой фокус</div>
+          <div class="metric-value">6</div>
+          <p class="metric-caption">только Pay, кошелек, чат, инвестиции, AML, API</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2" style="margin-top:16px">
+        <div class="chart-card">
+          <h3 class="chart-title">Распределение спроса</h3>
+          <p class="chart-desc">Что относится к супераппу, а что уходит в отдельные продукты</p>
+          <div id="demandSplit" class="plot short"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Приоритет сегментов</h3>
+          <p class="chart-desc">Связь с app-first логикой и коммерческий потенциал</p>
+          <div id="priorityBubble" class="plot short"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="segments">
+      <div class="section-header">
+        <div>
+          <h2>Итоговая модель сегментов</h2>
+          <p>Сегменты сгруппированы по роли app в продукте клиента</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Иерархия сегментов</h3>
+          <p class="chart-desc">Основной, средний, проверяемый и стратегический фокус</p>
+          <div id="segmentTreemap" class="plot tall"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Сила сегментов</h3>
+          <p class="chart-desc">Условная оценка по совпадению с продуктом</p>
+          <div id="segmentBars" class="plot tall"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="core">
+      <div class="section-header">
+        <div>
+          <h2>Ядро app</h2>
+          <p>Главная связка - кошелек, социальные функции, P2P, награды и удержание</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Роль продуктовых слоев</h3>
+          <p class="chart-desc">Что является ядром, а что усиливает продукт</p>
+          <div id="layerDonut" class="plot"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Связка функций и сегментов</h3>
+          <p class="chart-desc">Насколько функции важны для разных групп клиентов</p>
+          <div id="featureHeatmap" class="plot"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="not-core">
+      <div class="section-header">
+        <div>
+          <h2>Что не является прямой ЦА</h2>
+          <p>Если нужен один модуль, это не прямой фокус супераппа</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Матрица app vs отдельный модуль</h3>
+          <p class="chart-desc">Чем выше и правее - тем ближе к супераппу</p>
+          <div id="fitMatrix" class="plot"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Запросы вне прямого фокуса</h3>
+          <p class="chart-desc">Куда относить отдельные продуктовые запросы</p>
+          <div id="notCoreBars" class="plot"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="pains">
+      <div class="section-header">
+        <div>
+          <h2>Карта B2B-болей</h2>
+          <p>Ключевые боли, которые должен закрывать продукт</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Боли по сегментам</h3>
+          <p class="chart-desc">Условная выраженность болей по ключевым группам</p>
+          <div id="painHeatmap" class="plot tall"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Главные причины покупки</h3>
+          <p class="chart-desc">Индекс значимости для app-first продукта</p>
+          <div id="painReasons" class="plot tall"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="formats">
+      <div class="section-header">
+        <div>
+          <h2>Продуктовые упаковки</h2>
+          <p>Разные сегменты требуют разных форматов поставки</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Связь сегментов и упаковок</h3>
+          <p class="chart-desc">Какой формат подходит каждой группе</p>
+          <div id="formatSankey" class="plot tall"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Роль усилителей</h3>
+          <p class="chart-desc">Pay, инвестиции, Web, AML и расширение как дополнительные слои</p>
+          <div id="boosterBars" class="plot tall"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="niches">
+      <div class="section-header">
+        <div>
+          <h2>Нишевые сегменты</h2>
+          <p>Направления для пилотов и проверки</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="chart-card">
+          <h3 class="chart-title">Ниши по зрелости и fit</h3>
+          <p class="chart-desc">Чем выше и правее - тем лучше для пилота</p>
+          <div id="nicheQuadrant" class="plot"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Карта ниш</h3>
+          <p class="chart-desc">Условный вес нишевых направлений</p>
+          <div id="nicheTreemap" class="plot"></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer">Дэшборд по итоговой модели ЦА супераппа</div>
+  </main>
+
+<script>
+const config = {responsive: true, displayModeBar: false};
+const font = {family: 'Inter, Arial, sans-serif', color: '#111827'};
+const layoutBase = {
+  paper_bgcolor: 'white',
+  plot_bgcolor: 'white',
+  font,
+  margin: {l: 42, r: 24, t: 22, b: 48},
+  xaxis: {gridcolor: '#eef1f5', zerolinecolor: '#eef1f5'},
+  yaxis: {gridcolor: '#eef1f5', zerolinecolor: '#eef1f5'}
+};
+
+Plotly.newPlot('demandSplit', [{
+  type: 'pie',
+  hole: 0.62,
+  labels: ['Суперапп', 'Кошелек', 'Pay / процессинг', 'Инвестиции / AML / API'],
+  values: [48, 18, 18, 16],
+  textinfo: 'label+percent',
+  hovertemplate: '%{label}<br>%{value}%<extra></extra>',
+  marker: {colors: ['#1f6feb', '#12b76a', '#f79009', '#98a2b3'], line: {color: 'white', width: 3}}
+}], {...layoutBase, margin: {l: 10, r: 10, t: 18, b: 18}, showlegend: false}, config);
+
+Plotly.newPlot('priorityBubble', [{
+  type: 'scatter', mode: 'markers+text',
+  x: [94, 88, 84, 80, 70, 62, 54, 48, 38],
+  y: [96, 92, 87, 84, 74, 66, 58, 50, 88],
+  text: ['Кошельки<br>как app', 'Token<br>экосистемы', 'Региональные<br>криптосервисы', 'Стейблкоин<br>P2P', 'Social<br>crypto', 'P2P<br>сообщества', 'Бренды<br>loyalty', 'Creator<br>клубы', 'Мессенджеры'],
+  textposition: 'top center',
+  marker: {size: [34, 32, 30, 29, 24, 22, 20, 18, 22], color: ['#1f6feb','#1f6feb','#12b76a','#12b76a','#7a5af8','#f79009','#f79009','#f79009','#98a2b3'], opacity: 0.86, line: {color: 'white', width: 2}},
+  hovertemplate: 'Коммерческий потенциал: %{x}<br>Связь с app: %{y}<extra></extra>'
+}], {...layoutBase,
+  xaxis: {title: 'Коммерческий потенциал', range: [0, 100], gridcolor: '#eef1f5'},
+  yaxis: {title: 'Связь с app-first логикой', range: [0, 100], gridcolor: '#eef1f5'},
+  shapes: [
+    {type:'line', x0:50, x1:50, y0:0, y1:100, line:{color:'#e8ebef', dash:'dot'}},
+    {type:'line', x0:0, x1:100, y0:50, y1:50, line:{color:'#e8ebef', dash:'dot'}}
+  ]
+}, config);
+
+Plotly.newPlot('segmentTreemap', [{
+  type:'treemap',
+  labels:['Все сегменты','Основной ICP','Кошельки как app','Крипто-комьюнити и token','Региональные криптосервисы','Стейблкоин P2P','Средний ICP','Social crypto','Web3-сообщества','P2P-сообщества','Проверяемые','Бренды / loyalty','Игры / фанаты','Creator-клубы','Telegram / TON','Стратегические','Мессенджеры','Крупные финтехи'],
+  parents:['','Все сегменты','Основной ICP','Основной ICP','Основной ICP','Основной ICP','Все сегменты','Средний ICP','Средний ICP','Средний ICP','Все сегменты','Проверяемые','Проверяемые','Проверяемые','Проверяемые','Все сегменты','Стратегические','Стратегические'],
+  values:[0,0,28,26,23,21,0,15,13,11,0,10,9,8,7,0,9,8],
+  marker:{colors:['#ffffff','#eef5ff','#1f6feb','#1f6feb','#12b76a','#12b76a','#f4f3ff','#7a5af8','#7a5af8','#f79009','#fffaeb','#f79009','#f79009','#f79009','#f79009','#f7f8fa','#98a2b3','#98a2b3']},
+  textinfo:'label+value',
+  hovertemplate:'%{label}<br>Условный вес: %{value}<extra></extra>'
+}], {...layoutBase, margin:{l:10,r:10,t:10,b:10}}, config);
+
+Plotly.newPlot('segmentBars', [{
+  type:'bar', orientation:'h',
+  y:['Кошельки как ежедневный app','Крипто-комьюнити и token','Региональные криптосервисы','Стейблкоин-кошельки с P2P','Social crypto / Web3','P2P-сообщества','Бренды / loyalty','Creator / клубы','Мессенджеры'],
+  x:[96,92,87,84,74,66,58,50,46],
+  marker:{color:['#1f6feb','#1f6feb','#12b76a','#12b76a','#7a5af8','#f79009','#f79009','#f79009','#98a2b3']},
+  hovertemplate:'%{y}: %{x}<extra></extra>'
+}], {...layoutBase, margin:{l:245,r:24,t:20,b:36}, xaxis:{title:'Fit с продуктом', range:[0,100], gridcolor:'#eef1f5'}, yaxis:{autorange:'reversed'}}, config);
+
+Plotly.newPlot('layerDonut', [{
+  type: 'pie',
+  hole: 0.58,
+  labels: ['Кошелек', 'Социальный слой', 'P2P / деньги в чате', 'Награды / удержание', 'Pay', 'Инвестиции', 'Web / расширение', 'AML'],
+  values: [22, 19, 16, 13, 10, 8, 7, 5],
+  textinfo: 'label+percent',
+  hovertemplate: '%{label}: %{value}%<extra></extra>',
+  marker: {colors: ['#1f6feb','#7a5af8','#12b76a','#f79009','#98a2b3','#98a2b3','#98a2b3','#98a2b3'], line: {color: 'white', width: 3}}
+}], {...layoutBase, margin: {l: 10, r: 10, t: 18, b: 18}, showlegend: false}, config);
+
+const segs = ['Кошельки','Token','Криптосервисы','Стейблкоин P2P','Social Web3','P2P группы','Loyalty','Creator'];
+const feats = ['Кошелек','Чаты','P2P','Награды','Pay','Инвестиции','Web3','AML'];
+const featureZ = [
+  [10,8,8,7,6,6,8,7],
+  [9,10,8,10,5,6,9,5],
+  [9,7,8,6,8,7,7,8],
+  [9,6,10,5,9,5,4,9],
+  [8,10,7,8,4,4,10,4],
+  [7,9,10,5,7,3,3,8],
+  [6,8,5,10,7,3,5,4],
+  [5,9,5,8,8,3,3,3]
+];
+Plotly.newPlot('featureHeatmap', [{
+  type:'heatmap', x:feats, y:segs, z:featureZ,
+  colorscale:[[0,'#f7f8fa'],[0.5,'#d8e8ff'],[1,'#1f6feb']],
+  showscale:true, colorbar:{title:'Важность'},
+  hovertemplate:'%{y}<br>%{x}: %{z}/10<extra></extra>'
+}], {...layoutBase, margin:{l:120,r:20,t:20,b:80}, xaxis:{tickangle:-30}, yaxis:{autorange:'reversed'}}, config);
+
+Plotly.newPlot('fitMatrix', [{
+  type: 'scatter', mode: 'markers+text',
+  x: [90, 84, 80, 74, 60, 52, 36, 30, 24, 18, 14],
+  y: [92, 88, 84, 80, 62, 56, 40, 34, 28, 22, 18],
+  text: ['Кошелек<br>+ social', 'Token<br>community', 'Криптосервис<br>app', 'Стейблкоин<br>P2P', 'Social<br>Web3', 'P2P<br>escrow', 'Только<br>Pay', 'Только<br>кошелек', 'Только<br>чат', 'Только<br>инвестиции', 'Только<br>AML/API'],
+  textposition: 'middle center',
+  marker: {size: [45,42,40,38,34,32,30,30,28,28,28], color: ['#1f6feb','#1f6feb','#12b76a','#12b76a','#7a5af8','#f79009','#98a2b3','#98a2b3','#98a2b3','#98a2b3','#98a2b3'], opacity: 0.18, line: {color: ['#1f6feb','#1f6feb','#12b76a','#12b76a','#7a5af8','#f79009','#98a2b3','#98a2b3','#98a2b3','#98a2b3','#98a2b3'], width: 2}}
+}], {...layoutBase,
+  xaxis: {title: 'Единая пользовательская среда', range: [0, 100], gridcolor: '#eef1f5'},
+  yaxis: {title: 'Связь общения и денег', range: [0, 100], gridcolor: '#eef1f5'},
+  shapes: [
+    {type:'rect', x0:50, x1:100, y0:50, y1:100, fillcolor:'#eef5ff', opacity:0.45, line:{width:0}},
+    {type:'rect', x0:0, x1:50, y0:0, y1:50, fillcolor:'#f7f8fa', opacity:0.7, line:{width:0}}
+  ],
+  annotations: [
+    {x:75, y:98, text:'Суперапп', showarrow:false, font:{color:'#1f6feb', size:12}},
+    {x:25, y:8, text:'Отдельный продукт / модуль', showarrow:false, font:{color:'#667085', size:12}}
+  ]
+}, config);
+
+Plotly.newPlot('notCoreBars', [{
+  type:'bar', orientation:'h',
+  y:['Только Pay','Только кошелек','Только чат','Только инвестиции','Только AML','Только API'],
+  x:[82,78,70,62,58,55],
+  marker:{color:['#f79009','#12b76a','#7a5af8','#98a2b3','#98a2b3','#98a2b3']},
+  hovertemplate:'%{y}: %{x}<extra></extra>'
+}], {...layoutBase, margin:{l:150,r:24,t:20,b:36}, xaxis:{title:'Сила отдельного спроса', gridcolor:'#eef1f5'}, yaxis:{autorange:'reversed'}}, config);
+
+const painSegments = ['Кошельки','Token','Криптосервисы','Стейблкоин P2P','Social Web3','P2P группы','Loyalty','Creator'];
+const pains = ['Частота входа','Удержание','Аудитория вне app','Связь чата и денег','Монетизация','Риски / AML','Юридическая модель','Поддержка'];
+const painZ = [
+  [10,9,7,8,8,7,6,7],
+  [9,10,10,8,7,5,7,7],
+  [8,9,7,7,9,8,8,8],
+  [8,8,6,8,8,10,10,8],
+  [7,9,9,8,6,4,5,6],
+  [7,8,8,10,6,10,9,9],
+  [8,8,6,5,7,4,5,6],
+  [7,8,7,5,8,3,5,5]
+];
+Plotly.newPlot('painHeatmap', [{
+  type:'heatmap', x:pains, y:painSegments, z:painZ,
+  colorscale:[[0,'#f7f8fa'],[0.5,'#d8e8ff'],[1,'#1f6feb']],
+  showscale:true, colorbar:{title:'Сила'},
+  hovertemplate:'%{y}<br>%{x}: %{z}/10<extra></extra>'
+}], {...layoutBase, margin:{l:120,r:20,t:20,b:115}, xaxis:{tickangle:-35}, yaxis:{autorange:'reversed'}}, config);
+
+Plotly.newPlot('painReasons', [{
+  type:'bar', orientation:'h',
+  y:['Низкая частота входа','Аудитория вне продукта','Нет связи общения и денег','Сложная монетизация','Регуляторные риски','Нет P2P-доверия','Сложный вход в Web3','Нет единой истории'],
+  x:[96,92,88,82,78,72,68,62],
+  text:[96,92,88,82,78,72,68,62],
+  textposition:'outside',
+  marker:{color:['#1f6feb','#1f6feb','#12b76a','#12b76a','#f79009','#f79009','#7a5af8','#98a2b3']},
+  hovertemplate:'%{y}: %{x}<extra></extra>'
+}], {...layoutBase, margin:{l:215,r:30,t:20,b:36}, xaxis:{title:'Индекс значимости', range:[0,100], gridcolor:'#eef1f5'}, yaxis:{autorange:'reversed'}}, config);
+
+Plotly.newPlot('formatSankey', [{
+  type:'sankey', arrangement:'snap',
+  node:{pad:18, thickness:16, line:{color:'#e8ebef',width:1}, label:['Кошельки','Token-экосистемы','Криптосервисы','Стейблкоин P2P','Social Web3','P2P группы','Loyalty / бренды','App как кошелек','Community app','Crypto service app','P2P money app','Social wallet','P2P escrow app','Rewards app'], color:['#eef5ff','#eef5ff','#ecfdf3','#ecfdf3','#f4f3ff','#fffaeb','#fffaeb','#1f6feb','#1f6feb','#12b76a','#12b76a','#7a5af8','#f79009','#f79009']},
+  link:{source:[0,1,2,3,4,5,6], target:[7,8,9,10,11,12,13], value:[9,8,7,7,5,5,4], color:['rgba(31,111,235,.18)','rgba(31,111,235,.18)','rgba(18,183,106,.18)','rgba(18,183,106,.18)','rgba(122,90,248,.18)','rgba(247,144,9,.18)','rgba(247,144,9,.18)']}
+}], {...layoutBase, margin:{l:10,r:10,t:10,b:10}}, config);
+
+Plotly.newPlot('boosterBars', [{
+  type:'bar',
+  x:['Pay','Инвойсы','Карта','Инвестиции','Web','Расширение','AML','VIP','Escrow','Marketplace'],
+  y:[7,6,6,7,6,6,8,5,8,4],
+  marker:{color:['#f79009','#f79009','#f79009','#7a5af8','#98a2b3','#98a2b3','#1f6feb','#98a2b3','#12b76a','#98a2b3']},
+  hovertemplate:'%{x}: %{y}/10<extra></extra>'
+}], {...layoutBase, margin:{l:42,r:20,t:20,b:105}, yaxis:{title:'Роль усилителя', range:[0,10]}, xaxis:{tickangle:-35}}, config);
+
+Plotly.newPlot('nicheQuadrant', [{
+  type:'scatter', mode:'markers+text',
+  x:[72,68,63,58,54,50,45,40,36,32],
+  y:[78,82,76,72,62,58,55,50,46,42],
+  text:['Telegram<br>TON','Token<br>сообщества','P2P<br>группы','Долларовые<br>кошельки','Loyalty<br>бренды','Фанаты<br>игры','Creator<br>клубы','DAO','NFT<br>коллекции','Инвест<br>клубы'],
+  textposition:'top center',
+  marker:{size:[30,30,28,28,24,23,22,20,20,20], color:['#1f6feb','#1f6feb','#12b76a','#12b76a','#f79009','#f79009','#f79009','#7a5af8','#7a5af8','#98a2b3'], opacity:.86, line:{color:'white',width:2}},
+  hovertemplate:'Понятность спроса: %{x}<br>Связь с app: %{y}<extra></extra>'
+}], {...layoutBase, xaxis:{title:'Понятность спроса', range:[0,100]}, yaxis:{title:'Связь с супераппом', range:[0,100]}, shapes:[{type:'line',x0:50,x1:50,y0:0,y1:100,line:{color:'#e8ebef',dash:'dot'}},{type:'line',x0:0,x1:100,y0:50,y1:50,line:{color:'#e8ebef',dash:'dot'}}]}, config);
+
+Plotly.newPlot('nicheTreemap', [{
+  type:'treemap',
+  labels:['Ниши','Telegram / TON','Token-сообщества','P2P-группы','Региональные долларовые кошельки','Бренды / loyalty','Игровые сообщества','Creator / клубы','DAO','NFT-комьюнити','Микро-инвест клубы'],
+  parents:['','Ниши','Ниши','Ниши','Ниши','Ниши','Ниши','Ниши','Ниши','Ниши','Ниши'],
+  values:[0,20,18,16,15,12,10,9,6,6,4],
+  marker:{colors:['#ffffff','#1f6feb','#1f6feb','#12b76a','#12b76a','#f79009','#f79009','#f79009','#7a5af8','#7a5af8','#98a2b3']},
+  textinfo:'label+value',
+  hovertemplate:'%{label}<br>Вес проверки: %{value}<extra></extra>'
+}], {...layoutBase, margin:{l:10,r:10,t:10,b:10}}, config);
+</script>
+</body>
+</html>
